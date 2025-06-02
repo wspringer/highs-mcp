@@ -8,6 +8,85 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 import highsLoader from 'highs';
+import { z } from 'zod';
+
+// Zod schemas for validation
+const VariableBoundSchema = z.object({
+  lower: z.number().nullable().optional(),
+  upper: z.number().nullable().optional(),
+});
+
+const ConstraintBoundSchema = z.object({
+  lower: z.number().nullable().optional(),
+  upper: z.number().nullable().optional(),
+});
+
+const VariableTypeSchema = z.enum(['continuous', 'integer', 'binary']);
+
+const ObjectiveSchema = z.object({
+  linear: z.array(z.number()).min(1, 'At least one objective coefficient is required'),
+});
+
+const ConstraintsSchema = z.object({
+  matrix: z.array(z.array(z.number())).min(1, 'At least one constraint is required'),
+  bounds: z.array(ConstraintBoundSchema),
+});
+
+const VariablesSchema = z.object({
+  bounds: z.array(VariableBoundSchema),
+  types: z.array(VariableTypeSchema).optional(),
+  names: z.array(z.string()).optional(),
+});
+
+const ProblemSchema = z.object({
+  sense: z.enum(['minimize', 'maximize']),
+  objective: ObjectiveSchema,
+  constraints: ConstraintsSchema,
+  variables: VariablesSchema,
+}).refine((data) => {
+  // Ensure matrix dimensions are consistent
+  const numVars = data.objective.linear.length;
+  const numConstraints = data.constraints.matrix.length;
+  
+  // Check that all constraint rows have the same number of variables
+  for (const row of data.constraints.matrix) {
+    if (row.length !== numVars) {
+      return false;
+    }
+  }
+  
+  // Check that bounds arrays have correct length
+  if (data.constraints.bounds.length !== numConstraints) {
+    return false;
+  }
+  
+  if (data.variables.bounds.length !== numVars) {
+    return false;
+  }
+  
+  if (data.variables.types && data.variables.types.length !== numVars) {
+    return false;
+  }
+  
+  if (data.variables.names && data.variables.names.length !== numVars) {
+    return false;
+  }
+  
+  return true;
+}, {
+  message: 'Problem dimensions are inconsistent',
+});
+
+const OptionsSchema = z.object({
+  time_limit: z.number().positive().optional(),
+  presolve: z.enum(['off', 'choose', 'on']).optional(),
+  solver: z.enum(['simplex', 'choose', 'ipm', 'pdlp']).optional(),
+}).optional();
+
+const SolveOptimizationArgsSchema = z.object({
+  problem: ProblemSchema,
+  options: OptionsSchema,
+});
 
 const server = new Server(
   {
@@ -143,7 +222,7 @@ async function getHighsInstance() {
   return highsInstance;
 }
 
-function problemToLPFormat(problem: any): string {
+function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): string {
   const { sense, objective, constraints, variables } = problem;
   const numVars = objective.linear.length;
   const numConstraints = constraints.matrix.length;
@@ -283,7 +362,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     );
   }
 
-  const { problem, options } = request.params.arguments as any;
+  // Validate input using Zod
+  const validationResult = SolveOptimizationArgsSchema.safeParse(request.params.arguments);
+  
+  if (!validationResult.success) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      `Invalid parameters: ${validationResult.error.errors.map(e => e.message).join(', ')}`
+    );
+  }
+
+  const { problem, options } = validationResult.data;
 
   try {
     const highs = await getHighsInstance();
