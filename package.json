@@ -20,7 +20,8 @@
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "highs": "^1.8.0"
+    "highs": "^1.8.0",
+    "zod": "^3.25.48"
   },
   "devDependencies": {
     "@types/node": "^22.15.29",

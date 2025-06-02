@@ -368,6 +368,113 @@ describe('HiGHS MCP Server', () => {
       });
 
       expect(response.error).toBeDefined();
+      expect(response.error.message).toContain('Invalid parameters');
+    });
+
+    it('should validate sense field', async () => {
+      const response = await sendRequest('tools/call', {
+        name: 'solve_optimization',
+        arguments: {
+          problem: {
+            sense: 'invalid',  // Invalid sense value
+            objective: { linear: [1, 2] },
+            variables: { bounds: [{}, {}] },
+            constraints: {
+              matrix: [[1, 1]],
+              bounds: [{}]
+            }
+          }
+        }
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain('Invalid parameters');
+    });
+
+    it('should validate empty objective coefficients', async () => {
+      const response = await sendRequest('tools/call', {
+        name: 'solve_optimization',
+        arguments: {
+          problem: {
+            sense: 'minimize',
+            objective: { linear: [] },  // Empty array not allowed
+            variables: { bounds: [] },
+            constraints: {
+              matrix: [],
+              bounds: []
+            }
+          }
+        }
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain('Invalid parameters');
+    });
+
+    it('should validate dimension consistency', async () => {
+      const response = await sendRequest('tools/call', {
+        name: 'solve_optimization',
+        arguments: {
+          problem: {
+            sense: 'minimize',
+            objective: { linear: [1, 2] },  // 2 variables
+            variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
+            constraints: {
+              matrix: [[1, 1, 1]],  // 3 variables in constraint (mismatch)
+              bounds: [{ upper: 10 }]
+            }
+          }
+        }
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain('Invalid parameters');
+    });
+
+    it('should validate variable types', async () => {
+      const response = await sendRequest('tools/call', {
+        name: 'solve_optimization',
+        arguments: {
+          problem: {
+            sense: 'minimize',
+            objective: { linear: [1, 2] },
+            variables: {
+              bounds: [{ lower: 0 }, { lower: 0 }],
+              types: ['continuous', 'invalid_type']  // Invalid type
+            },
+            constraints: {
+              matrix: [[1, 1]],
+              bounds: [{ upper: 10 }]
+            }
+          }
+        }
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain('Invalid parameters');
+    });
+
+    it('should validate solver options', async () => {
+      const response = await sendRequest('tools/call', {
+        name: 'solve_optimization',
+        arguments: {
+          problem: {
+            sense: 'minimize',
+            objective: { linear: [1, 2] },
+            variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
+            constraints: {
+              matrix: [[1, 1]],
+              bounds: [{ upper: 10 }]
+            }
+          },
+          options: {
+            solver: 'invalid_solver'  // Invalid solver type
+          }
+        }
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain('Invalid parameters');
     });
   });
 });
