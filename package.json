@@ -1,0 +1,31 @@
+{
+  "name": "highs-mcp",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/index.js",
+  "bin": {
+    "highs-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "postbuild": "cp node_modules/highs/build/highs.wasm dist/",
+    "start": "node dist/index.js",
+    "dev": "npm run build && node dist/index.js",
+    "test": "npm run build && vitest",
+    "test:ui": "npm run build && vitest --ui",
+    "test:watch": "npm run build && vitest --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "highs": "^1.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "@vitest/ui": "^3.2.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.0"
+  }
+}
