@@ -1,0 +1,3 @@
+package.versioned_files = ["package.json"]
+package.changelog = "CHANGELOG.md"
+bot.releases.enabled = true
