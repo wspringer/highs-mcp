@@ -291,7 +291,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-ISC
+MIT License - Copyright (c) 2024 Wilfred Springer
 
 ## Related Projects
 
