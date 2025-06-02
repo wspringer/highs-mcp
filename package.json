@@ -16,8 +16,8 @@
     "test:watch": "npm run build && vitest --watch"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Wilfred Springer",
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "highs": "^1.8.0",
