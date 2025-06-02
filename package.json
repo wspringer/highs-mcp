@@ -21,7 +21,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "highs": "^1.8.0",
-    "zod": "^3.25.48"
+    "zod": "^3.25.48",
+    "zod-to-json-schema": "^3.22.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.29",
