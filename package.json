@@ -20,9 +20,9 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "@sinclair/typebox": "^0.34.33",
     "highs": "^1.8.0",
-    "zod": "^3.25.48",
-    "zod-to-json-schema": "^3.22.3"
+    "zod": "^3.25.48"
   },
   "devDependencies": {
     "@types/node": "^22.15.29",

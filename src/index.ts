@@ -9,7 +9,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import highsLoader from "highs";
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { Type, Static } from "@sinclair/typebox";
 
 // Zod schemas for validation
 const VariableBoundSchema = z.object({
@@ -139,6 +139,73 @@ const SolveOptimizationArgsSchema = z.object({
   options: OptionsSchema,
 });
 
+// TypeBox schemas for JSON Schema generation
+const VariableBoundTypeBox = Type.Object({
+  lower: Type.Optional(Type.Union([Type.Number(), Type.Null()], { description: "Lower bound for the variable" })),
+  upper: Type.Optional(Type.Union([Type.Number(), Type.Null()], { description: "Upper bound for the variable" })),
+});
+
+const ConstraintBoundTypeBox = Type.Object({
+  lower: Type.Optional(Type.Union([Type.Number(), Type.Null()], { description: "Lower bound for the constraint" })),
+  upper: Type.Optional(Type.Union([Type.Number(), Type.Null()], { description: "Upper bound for the constraint" })),
+});
+
+const VariableTypeTypeBox = Type.Union([
+  Type.Literal("continuous"),
+  Type.Literal("integer"),
+  Type.Literal("binary")
+], { description: "Type of variable" });
+
+const ObjectiveTypeBox = Type.Object({
+  linear: Type.Array(Type.Number(), { minItems: 1, description: "Linear coefficients for each variable" }),
+}, { additionalProperties: false });
+
+const ConstraintsTypeBox = Type.Object({
+  matrix: Type.Array(Type.Array(Type.Number()), { minItems: 1, description: "Constraint coefficient matrix (A in Ax ≤/=/≥ b)" }),
+  bounds: Type.Array(ConstraintBoundTypeBox, { description: "Bounds for each constraint row" }),
+}, { additionalProperties: false });
+
+const VariablesTypeBox = Type.Object({
+  bounds: Type.Array(VariableBoundTypeBox, { description: "Bounds for each variable" }),
+  types: Type.Optional(Type.Array(VariableTypeTypeBox, { description: "Type of each variable (optional, defaults to continuous)" })),
+  names: Type.Optional(Type.Array(Type.String(), { description: "Names for each variable (optional)" })),
+}, { additionalProperties: false });
+
+const ProblemTypeBox = Type.Object({
+  sense: Type.Union([Type.Literal("minimize"), Type.Literal("maximize")], { description: "Optimization direction" }),
+  objective: Type.Object({
+    ...ObjectiveTypeBox.properties
+  }, { description: "Objective function coefficients", additionalProperties: false }),
+  constraints: Type.Object({
+    ...ConstraintsTypeBox.properties
+  }, { description: "Constraint specifications", additionalProperties: false }),
+  variables: Type.Object({
+    ...VariablesTypeBox.properties
+  }, { description: "Variable specifications", additionalProperties: false }),
+}, { additionalProperties: false });
+
+const OptionsTypeBox = Type.Optional(Type.Object({
+  time_limit: Type.Optional(Type.Number({ minimum: 0.001, description: "Time limit in seconds" })),
+  presolve: Type.Optional(Type.Union([
+    Type.Literal("off"),
+    Type.Literal("choose"),
+    Type.Literal("on")
+  ], { description: "Presolve option" })),
+  solver: Type.Optional(Type.Union([
+    Type.Literal("simplex"),
+    Type.Literal("choose"),
+    Type.Literal("ipm"),
+    Type.Literal("pdlp")
+  ], { description: "Solver method" })),
+}, { description: "Solver options", additionalProperties: false }));
+
+const SolveOptimizationArgsSchemaTypeBox = Type.Object({
+  problem: Type.Object({
+    ...ProblemTypeBox.properties
+  }, { description: "The optimization problem specification", additionalProperties: false }),
+  options: OptionsTypeBox,
+}, { additionalProperties: false });
+
 const server = new Server(
   {
     name: "highs-mcp",
@@ -157,11 +224,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       name: "solve_optimization",
       description:
         "Solve linear programming (LP) or mixed-integer programming (MIP) problems using HiGHS solver",
-      inputSchema: zodToJsonSchema(SolveOptimizationArgsSchema, {
-        $refStrategy: "none",
-        target: "jsonSchema7",
-        name: "SolveOptimizationArgs",
-      }),
+      inputSchema: SolveOptimizationArgsSchemaTypeBox,
     },
   ],
 }));
