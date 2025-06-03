@@ -13,20 +13,29 @@
     "dev": "npm run build && node dist/index.js",
     "test": "npm run build && vitest",
     "test:ui": "npm run build && vitest --ui",
-    "test:watch": "npm run build && vitest --watch"
+    "test:watch": "npm run build && vitest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts"
   },
   "keywords": [],
   "author": "Wilfred Springer",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "@sinclair/typebox": "^0.34.33",
     "highs": "^1.8.0",
-    "zod": "^3.25.48"
+    "zod": "^3.25.48",
+    "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
     "@types/node": "^22.15.29",
+    "@typescript-eslint/eslint-plugin": "^8.33.1",
+    "@typescript-eslint/parser": "^8.33.1",
     "@vitest/ui": "^3.2.0",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.1",
+    "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.0"
   }
