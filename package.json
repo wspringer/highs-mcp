@@ -21,6 +21,14 @@
   "keywords": [],
   "author": "Wilfred Springer",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wspringer/highs-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wspringer/highs-mcp/issues"
+  },
+  "homepage": "https://github.com/wspringer/highs-mcp#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "highs": "^1.8.0",
