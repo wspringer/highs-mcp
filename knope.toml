@@ -1,3 +1,15 @@
-package.versioned_files = ["package.json"]
-package.changelog = "CHANGELOG.md"
-bot.releases.enabled = true
+[package]
+versioned_files = ["package.json"]
+changelog = "CHANGELOG.md"
+
+[[workflows]]
+name = "release"
+
+[[workflows.steps]]
+type = "Release"
+
+[[workflows]]
+name = "document-change"
+
+[[workflows.steps]]
+type = "CreateChangeFile"
