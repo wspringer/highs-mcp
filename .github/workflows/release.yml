@@ -1,0 +1,39 @@
+# .github/workflows/release.yml
+
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  release:
+    if: >
+      (github.head_ref == 'knope/release' && github.event.pull_request.merged == true)
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
