@@ -1,0 +1,22 @@
+# Ensure all text files use LF line endings
+* text=auto eol=lf
+
+# Explicitly declare text files
+*.ts text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+
+# Declare files that will always have CRLF line endings on checkout (if any)
+# *.bat text eol=crlf
+
+# Binary files
+*.wasm binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
