@@ -74,7 +74,7 @@ The HiGHS MCP server is compatible with any MCP client. Some popular options inc
 
 ## Tool API
 
-The server provides a single tool: `solve_optimization`
+The server provides a single tool: `optimize-mip-lp-tool`
 
 ### Input Schema
 
@@ -94,7 +94,7 @@ The server provides a single tool: `solve_optimization`
       names?: string[]
     },
     constraints: {
-      matrix: number[][],  // Coefficient matrix (A in Ax ≤/=/≥ b)
+      matrix: number[][],  // Coefficient matrix (A in Ax ≤/=/≥ b) - at least one constraint required
       bounds: Array<{
         lower?: number | null,
         upper?: number | null
