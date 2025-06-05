@@ -44,42 +44,55 @@ export const ProblemSchema = z
     constraints: ConstraintsSchema.describe("Constraint specifications"),
     variables: VariablesSchema.describe("Variable specifications"),
   })
-  .refine(
-    (data) => {
-      // Ensure matrix dimensions are consistent
-      const numVars = data.objective.linear.length;
-      const numConstraints = data.constraints.matrix.length;
+  .superRefine((data, ctx) => {
+    // Ensure matrix dimensions are consistent
+    const numVars = data.objective.linear.length;
+    const numConstraints = data.constraints.matrix.length;
 
-      // Check that all constraint rows have the same number of variables
-      for (const row of data.constraints.matrix) {
-        if (row.length !== numVars) {
-          return false;
-        }
+    // Check that all constraint rows have the same number of variables
+    data.constraints.matrix.forEach((row, index) => {
+      if (row.length !== numVars) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Constraint row ${index} has ${row.length} coefficients but expected ${numVars} (matching the number of variables in the objective function)`,
+          path: ["constraints", "matrix", index],
+        });
       }
+    });
 
-      // Check that bounds arrays have correct length
-      if (data.constraints.bounds.length !== numConstraints) {
-        return false;
-      }
+    // Check that bounds arrays have correct length
+    if (data.constraints.bounds.length !== numConstraints) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Constraint bounds array has ${data.constraints.bounds.length} elements but expected ${numConstraints} (matching the number of constraint rows)`,
+        path: ["constraints", "bounds"],
+      });
+    }
 
-      if (data.variables.bounds.length !== numVars) {
-        return false;
-      }
+    if (data.variables.bounds.length !== numVars) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Variable bounds array has ${data.variables.bounds.length} elements but expected ${numVars} (matching the number of variables in the objective function)`,
+        path: ["variables", "bounds"],
+      });
+    }
 
-      if (data.variables.types && data.variables.types.length !== numVars) {
-        return false;
-      }
+    if (data.variables.types && data.variables.types.length !== numVars) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Variable types array has ${data.variables.types.length} elements but expected ${numVars} (matching the number of variables in the objective function)`,
+        path: ["variables", "types"],
+      });
+    }
 
-      if (data.variables.names && data.variables.names.length !== numVars) {
-        return false;
-      }
-
-      return true;
-    },
-    {
-      message: "Problem dimensions are inconsistent",
-    },
-  );
+    if (data.variables.names && data.variables.names.length !== numVars) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Variable names array has ${data.variables.names.length} elements but expected ${numVars} (matching the number of variables in the objective function)`,
+        path: ["variables", "names"],
+      });
+    }
+  });
 
 export const OptionsSchema = z
   .object({
