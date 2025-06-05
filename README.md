@@ -11,6 +11,10 @@ This MCP server exposes the HiGHS optimization solver through a standardized int
 - Binary and integer variable constraints
 - Multi-objective optimization
 
+## Requirements
+
+- Node.js >= 16.0.0
+
 ## Installation
 
 ```bash

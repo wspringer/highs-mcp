@@ -138,7 +138,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 async function main() {
+  // Check Node.js version
+  const nodeVersion = process.version;
+  const majorVersion = parseInt(nodeVersion.split(".")[0].substring(1));
+
+  console.error(`Node.js version: ${nodeVersion}`);
   console.error("Starting HiGHS MCP server v0.0.1...");
+
+  // Check if Node.js version is >= 16.0.0
+  if (majorVersion < 16) {
+    throw new Error(
+      `HiGHS MCP server requires Node.js version 16.0.0 or higher. Current version: ${nodeVersion}. ` +
+        `Please upgrade your Node.js installation to version 16.0.0 or higher.`,
+    );
+  }
 
   const transport = new StdioServerTransport();
 
