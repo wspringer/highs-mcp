@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawn, ChildProcess } from "child_process";
 import { once } from "events";
+import packageJson from "../package.json";
 
 describe("Node.js Version Check", () => {
   it("should start successfully with Node.js >= 16", async () => {
@@ -134,7 +135,7 @@ describe("HiGHS MCP Server", () => {
       expect(response.result).toBeDefined();
       expect(response.result.protocolVersion).toBe("2024-11-05");
       expect(response.result.serverInfo.name).toBe("highs-mcp");
-      expect(response.result.serverInfo.version).toBe("0.0.1");
+      expect(response.result.serverInfo.version).toBe(packageJson.version);
     });
 
     it("should list available tools", async () => {
