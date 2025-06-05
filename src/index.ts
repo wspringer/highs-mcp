@@ -11,13 +11,14 @@ import highsLoader from "highs";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { OptimizationArgsSchema } from "./schemas.js";
 import { problemToLPFormat } from "./lp-format.js";
+import packageJson from "../package.json";
 
 const TOOL_NAME = "optimize-mip-lp-tool";
 
 const server = new Server(
   {
     name: "highs-mcp",
-    version: "0.0.1",
+    version: packageJson.version,
   },
   {
     capabilities: {
@@ -143,7 +144,7 @@ async function main() {
   const majorVersion = parseInt(nodeVersion.split(".")[0].substring(1));
 
   console.error(`Node.js version: ${nodeVersion}`);
-  console.error("Starting HiGHS MCP server v0.0.1...");
+  console.error(`Starting HiGHS MCP server v${packageJson.version}...`);
 
   // Check if Node.js version is >= 16.0.0
   if (majorVersion < 16) {
