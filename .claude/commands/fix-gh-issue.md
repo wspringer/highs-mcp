@@ -11,11 +11,14 @@ Follow these steps:
 {issue number} --name {branch name}`, taking the issue number from the
    arguments, using a sensible branch name. Include the issue number in the
    branch name, at the end.
-1. Implement the necessary changes to fix the issue
-2. Write and run tests to verify the fix
-3. Ensure code passes linting and type checking
-4. Check if the README is still correct, given the changes. Correct when needed.
-5. Determine if this should be considered a patch, a minor or a major change,
+5. Implement the necessary changes to fix the issue
+6. Write and run tests to verify the fix
+7. Ensure code passes linting and type checking
+8. Check if the README is still correct, given the changes. Correct when needed.
+9. Determine if this should be considered a patch, a minor or a major change,
    and ask me for confirmation.
-6.  Document the change in a changeset, following knope's convention of having
-   changesets.
+10. Document the change in a changeset, following knope's convention of having
+    changesets. The change should not cover changes to the codebase itself. It
+    should just cover the _effect_ of the change. Keep the description concise
+    and compact. Feel free to elaborate a bit more in case of significant
+    changes.
