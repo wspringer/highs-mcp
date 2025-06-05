@@ -13,4 +13,7 @@ Follow these steps:
 5. Implement the necessary changes to fix the issue
 6. Write and run tests to verify the fix
 7. Ensure code passes linting and type checking
-8. Use `knope document-change` to document the change.
+8. Determine if this should be considered a patch, a minor or a major change,
+   and ask me for confirmation.
+9. Document the change in a changeset, following knope's convention of having
+   changesets.
