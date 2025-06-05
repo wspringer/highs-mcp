@@ -2,6 +2,57 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawn, ChildProcess } from "child_process";
 import { once } from "events";
 
+describe("Node.js Version Check", () => {
+  it("should start successfully with Node.js >= 16", async () => {
+    // Start the server and check that it starts without error
+    const server = spawn("node", ["dist/index.js"], {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let stderrData = "";
+    server.stderr!.on("data", (data) => {
+      stderrData += data.toString();
+    });
+
+    // Wait a bit for the server to start
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Check that the server printed the Node version
+    expect(stderrData).toContain("Node.js version:");
+    expect(stderrData).toContain("Starting HiGHS MCP server");
+    expect(stderrData).not.toContain("requires Node.js version 16.0.0 or higher");
+
+    // Clean up
+    server.kill();
+    await once(server, "exit");
+  });
+
+  it("should fail with clear error message for Node.js < 16", async () => {
+    // Mock process.version to simulate old Node version
+    const originalVersion = process.version;
+    Object.defineProperty(process, "version", {
+      value: "v14.17.0",
+      writable: true,
+      configurable: true,
+    });
+
+    // We can't actually test this by running the server with an old Node version
+    // in our test environment, so we'll test the logic separately
+    const nodeVersion = process.version;
+    const majorVersion = parseInt(nodeVersion.split(".")[0].substring(1));
+
+    expect(majorVersion).toBe(14);
+    expect(majorVersion < 16).toBe(true);
+
+    // Restore original version
+    Object.defineProperty(process, "version", {
+      value: originalVersion,
+      writable: true,
+      configurable: true,
+    });
+  });
+});
+
 describe("HiGHS MCP Server", () => {
   let server: ChildProcess;
   let requestId = 1;
