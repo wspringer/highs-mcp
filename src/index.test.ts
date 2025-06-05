@@ -428,6 +428,186 @@ describe("HiGHS MCP Server", () => {
       expect(response.error.message).toContain("Invalid parameters");
     });
 
+    it("should provide specific error for mismatched constraint matrix dimensions", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2, 3] }, // 3 variables
+            variables: { bounds: [{ lower: 0 }, { lower: 0 }, { lower: 0 }] },
+            constraints: {
+              matrix: [
+                [1, 1], // Row 0: 2 coefficients (should be 3)
+                [1, 1, 1], // Row 1: 3 coefficients (correct)
+                [1], // Row 2: 1 coefficient (should be 3)
+              ],
+              bounds: [{ upper: 10 }, { upper: 20 }, { upper: 15 }],
+            },
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+      expect(response.error.message).toContain(
+        "Constraint row 0 has 2 coefficients but expected 3",
+      );
+      expect(response.error.message).toContain(
+        "Constraint row 2 has 1 coefficients but expected 3",
+      );
+    });
+
+    it("should provide specific error for constraint bounds array length mismatch", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
+            constraints: {
+              matrix: [
+                [1, 1],
+                [2, 2],
+                [3, 3],
+              ], // 3 constraints
+              bounds: [{ upper: 10 }, { upper: 20 }], // Only 2 bounds (should be 3)
+            },
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+      expect(response.error.message).toContain(
+        "Constraint bounds array has 2 elements but expected 3",
+      );
+    });
+
+    it("should provide specific error for variable bounds array length mismatch", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "maximize",
+            objective: { linear: [5, 3, 2] }, // 3 variables
+            variables: {
+              bounds: [{ lower: 0 }, { lower: 0 }], // Only 2 bounds (should be 3)
+            },
+            constraints: {
+              matrix: [[1, 1, 1]],
+              bounds: [{ upper: 10 }],
+            },
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+      expect(response.error.message).toContain(
+        "Variable bounds array has 2 elements but expected 3",
+      );
+    });
+
+    it("should provide specific error for variable types array length mismatch", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "maximize",
+            objective: { linear: [5, 3, 2] }, // 3 variables
+            variables: {
+              bounds: [{ lower: 0 }, { lower: 0 }, { lower: 0 }],
+              types: ["integer", "continuous"], // Only 2 types (should be 3)
+            },
+            constraints: {
+              matrix: [[1, 1, 1]],
+              bounds: [{ upper: 10 }],
+            },
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+      expect(response.error.message).toContain(
+        "Variable types array has 2 elements but expected 3",
+      );
+    });
+
+    it("should provide specific error for variable names array length mismatch", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2, 3, 4] }, // 4 variables
+            variables: {
+              bounds: [{ lower: 0 }, { lower: 0 }, { lower: 0 }, { lower: 0 }],
+              names: ["x1", "x2"], // Only 2 names (should be 4)
+            },
+            constraints: {
+              matrix: [[1, 1, 1, 1]],
+              bounds: [{ upper: 10 }],
+            },
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+      expect(response.error.message).toContain(
+        "Variable names array has 2 elements but expected 4",
+      );
+    });
+
+    it("should report multiple dimension errors at once", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2, 3] }, // 3 variables
+            variables: {
+              bounds: [{ lower: 0 }, { lower: 0 }], // Wrong: 2 instead of 3
+              types: ["integer"], // Wrong: 1 instead of 3
+              names: ["x1", "x2", "x3", "x4"], // Wrong: 4 instead of 3
+            },
+            constraints: {
+              matrix: [
+                [1, 1], // Wrong: 2 instead of 3
+                [1, 1, 1, 1], // Wrong: 4 instead of 3
+              ],
+              bounds: [{ upper: 10 }], // Wrong: 1 instead of 2
+            },
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+      // Should report all dimension errors
+      expect(response.error.message).toContain(
+        "Constraint row 0 has 2 coefficients but expected 3",
+      );
+      expect(response.error.message).toContain(
+        "Constraint row 1 has 4 coefficients but expected 3",
+      );
+      expect(response.error.message).toContain(
+        "Constraint bounds array has 1 elements but expected 2",
+      );
+      expect(response.error.message).toContain(
+        "Variable bounds array has 2 elements but expected 3",
+      );
+      expect(response.error.message).toContain(
+        "Variable types array has 1 elements but expected 3",
+      );
+      expect(response.error.message).toContain(
+        "Variable names array has 4 elements but expected 3",
+      );
+    });
+
     it("should validate variable types", async () => {
       const response = await sendRequest("tools/call", {
         name: "optimize-mip-lp-tool",

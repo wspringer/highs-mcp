@@ -59,10 +59,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const validationResult = OptimizationArgsSchema.safeParse(request.params.arguments);
 
   if (!validationResult.success) {
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Invalid parameters: ${validationResult.error.errors.map((e) => e.message).join(", ")}`,
-    );
+    const errorMessages = validationResult.error.errors.map((e) => e.message);
+    throw new McpError(ErrorCode.InvalidParams, `Invalid parameters: ${errorMessages.join(", ")}`, {
+      errors: errorMessages,
+    });
   }
 
   const { problem, options } = validationResult.data;
