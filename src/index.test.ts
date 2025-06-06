@@ -146,6 +146,40 @@ describe("HiGHS MCP Server", () => {
       expect(response.result.tools[0].name).toBe("optimize-mip-lp-tool");
       expect(response.result.tools[0].description).toContain("HiGHS solver");
     });
+
+    it("should include error condition descriptions in tool schema", async () => {
+      const response = await sendRequest("tools/list");
+
+      expect(response.result).toBeDefined();
+      const tool = response.result.tools[0];
+      expect(tool.inputSchema).toBeDefined();
+      
+      // Check that the schema includes error condition descriptions
+      const problemDescription = tool.inputSchema.properties.problem.description;
+      expect(problemDescription).toContain("DIMENSION CONSISTENCY REQUIREMENTS");
+      expect(problemDescription).toContain("POSSIBLE SOLVER STATUSES");
+      expect(problemDescription).toContain("INPUT VALIDATION ERRORS");
+      
+      // Check specific error conditions are documented
+      expect(problemDescription).toContain("All constraint rows must have the same number of coefficients");
+      expect(problemDescription).toContain("Infeasible");
+      expect(problemDescription).toContain("Unbounded");
+      expect(problemDescription).toContain("Time limit reached");
+      
+      // Check field-specific error descriptions
+      const objectiveDescription = tool.inputSchema.properties.problem.properties.objective.properties.linear.description;
+      expect(objectiveDescription).toContain("The length of this array defines the number of variables");
+      
+      const constraintsDescription = tool.inputSchema.properties.problem.properties.constraints.description;
+      expect(constraintsDescription).toContain("Common errors: dimension mismatch");
+      
+      const matrixDescription = tool.inputSchema.properties.problem.properties.constraints.properties.matrix.description;
+      expect(matrixDescription).toContain("Dimension mismatch will cause validation errors");
+      
+      // Check that min constraints are properly exposed
+      expect(tool.inputSchema.properties.problem.properties.objective.properties.linear.minItems).toBe(1);
+      expect(tool.inputSchema.properties.problem.properties.constraints.properties.matrix.minItems).toBe(1);
+    });
   });
 
   describe("Optimization Solver", () => {
