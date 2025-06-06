@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server that provides linear programming (LP) and mixed-integer programming (MIP) optimization capabilities using the [HiGHS solver](https://highs.dev/).
 
+<a href="https://buymeacoffee.com/up8kgm1" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="200" />
+</a>
+
 ## Overview
 
 This MCP server exposes the HiGHS optimization solver through a standardized interface, allowing AI assistants and other MCP clients to solve complex optimization problems including:
