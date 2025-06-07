@@ -103,10 +103,8 @@ The server provides a single tool: `optimize-mip-lp-tool`
     },
     constraints: {
       matrix: number[][],  // Coefficient matrix (A in Ax ≤/=/≥ b) - at least one constraint required
-      bounds: Array<{
-        lower?: number | null,
-        upper?: number | null
-      }>
+      sense: Array<'<=' | '>=' | '='>,  // Constraint directions
+      rhs: number[]  // Right-hand side values
     }
   },
   options?: {
@@ -153,10 +151,8 @@ Optimize production schedules to maximize profit while respecting resource const
         [2, 3],  // Machine hours per unit
         [1, 2]   // Labor hours per unit
       ],
-      bounds: [
-        { upper: 100 },  // Available machine hours
-        { upper: 80 }    // Available labor hours
-      ]
+      sense: ['<=', '<='],
+      rhs: [100, 80]  // Available machine/labor hours
     }
   }
 }
@@ -187,14 +183,8 @@ Minimize transportation costs across a supply chain network:
         [0, 0, 0, 0, 1, 0, 1, 0],
         [0, 0, 0, 0, 0, 1, 0, 1]
       ],
-      bounds: [
-        { upper: 50 },   // Supply from S1
-        { upper: 40 },   // Supply from S2
-        { upper: 0 },    // Flow conservation at W1
-        { upper: 0 },    // Flow conservation at W2
-        { lower: 30 },   // Demand at C1
-        { lower: 25 }    // Demand at C2
-      ]
+      sense: ['<=', '<=', '=', '=', '>=', '>='],
+      rhs: [50, 40, 0, 0, 30, 25]  // Supply, conservation, demand
     }
   }
 }
@@ -225,10 +215,8 @@ Optimize investment allocation with risk constraints:
         [1, 1, 1, 1],           // Total allocation = 100%
         [0.02, 0.15, 0.08, 0.20]  // Risk constraint
       ],
-      bounds: [
-        { lower: 1, upper: 1 },   // Exactly 100% allocated
-        { upper: 0.10 }           // Max 10% portfolio risk
-      ]
+      sense: ['=', '<='],
+      rhs: [1, 0.10]  // Exactly 100% allocated, max 10% risk
     }
   }
 }
@@ -254,10 +242,8 @@ Optimize resource allocation across projects with integer constraints:
         [5, 8, 3],   // Resource requirements
         [2, 3, 1]    // Time requirements
       ],
-      bounds: [
-        { upper: 10 },  // Available resources
-        { upper: 5 }    // Available time
-      ]
+      sense: ['<=', '<='],
+      rhs: [10, 5]  // Available resources/time
     }
   }
 }
