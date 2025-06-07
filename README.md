@@ -93,14 +93,12 @@ The server provides a single tool: `optimize-mip-lp-tool`
     objective: {
       linear: number[]  // Coefficients for each variable
     },
-    variables: {
-      bounds: Array<{
-        lower?: number | null,
-        upper?: number | null
-      }>,
-      types?: Array<'continuous' | 'integer' | 'binary'>,
-      names?: string[]
-    },
+    variables: Array<{
+      name?: string,        // Variable name (optional, defaults to x1, x2, etc.)
+      lb?: number,          // Lower bound (optional, defaults to 0)
+      ub?: number,          // Upper bound (optional, defaults to +∞, except binary gets 1)
+      type?: 'cont' | 'int' | 'bin'  // Variable type (optional, defaults to 'cont')
+    }>,
     constraints: {
       // Dense format (for small problems):
       dense?: number[][],  // 2D array where each row is a constraint
@@ -150,12 +148,10 @@ Optimize production schedules to maximize profit while respecting resource const
     objective: {
       linear: [25, 40]  // Profit per unit
     },
-    variables: {
-      bounds: [
-        { lower: 0 },  // Product A
-        { lower: 0 }   // Product B
-      ]
-    },
+    variables: [
+      { name: 'ProductA' },  // Product A (defaults: cont, [0, +∞))
+      { name: 'ProductB' }   // Product B (defaults: cont, [0, +∞))
+    ],
     constraints: {
       dense: [
         [2, 3],  // Machine hours per unit
@@ -179,10 +175,11 @@ Minimize transportation costs across a supply chain network:
     objective: {
       linear: [12.5, 14.2, 13.8, 11.9, 8.4, 9.1, 10.5, 6.2]
     },
-    variables: {
-      names: ['S1_W1', 'S1_W2', 'S2_W1', 'S2_W2', 'W1_C1', 'W1_C2', 'W2_C1', 'W2_C2'],
-      bounds: Array(8).fill({ lower: 0 })
-    },
+    variables: [
+      { name: 'S1_W1' }, { name: 'S1_W2' }, { name: 'S2_W1' }, { name: 'S2_W2' },
+      { name: 'W1_C1' }, { name: 'W1_C2' }, { name: 'W2_C1' }, { name: 'W2_C2' }
+      // All default to: cont, [0, +∞)
+    ],
     constraints: {
       // Supply, flow conservation, and demand constraints (dense format)
       dense: [
@@ -211,15 +208,13 @@ Optimize investment allocation with risk constraints:
     objective: {
       linear: [0.08, 0.12, 0.10, 0.15]  // Expected returns
     },
-    variables: {
-      names: ['Bonds', 'Stocks', 'RealEstate', 'Commodities'],
-      bounds: [
-        { lower: 0, upper: 0.4 },  // Max 40% in bonds
-        { lower: 0, upper: 0.6 },  // Max 60% in stocks
-        { lower: 0, upper: 0.3 },  // Max 30% in real estate
-        { lower: 0, upper: 0.2 }   // Max 20% in commodities
-      ]
-    },
+    variables: [
+      { name: 'Bonds', ub: 0.4 },         // Max 40% in bonds
+      { name: 'Stocks', ub: 0.6 },        // Max 60% in stocks
+      { name: 'RealEstate', ub: 0.3 },    // Max 30% in real estate
+      { name: 'Commodities', ub: 0.2 }    // Max 20% in commodities
+      // All default to: cont, lb=0
+    ],
     constraints: {
       dense: [
         [1, 1, 1, 1],           // Total allocation = 100%
@@ -243,10 +238,12 @@ Optimize resource allocation across projects with integer constraints:
     objective: {
       linear: [100, 150, 80]  // Value per project
     },
-    variables: {
-      types: ['binary', 'binary', 'binary'],  // Select or not
-      names: ['ProjectA', 'ProjectB', 'ProjectC']
-    },
+    variables: [
+      { name: 'ProjectA', type: 'bin' },  // Binary: select or not
+      { name: 'ProjectB', type: 'bin' },  // Binary: select or not
+      { name: 'ProjectC', type: 'bin' }   // Binary: select or not
+      // Binary defaults to [0, 1] bounds
+    ],
     constraints: {
       dense: [
         [5, 8, 3],   // Resource requirements
@@ -270,11 +267,9 @@ For large optimization problems with mostly zero coefficients, use the sparse fo
     objective: {
       linear: [1, 2, 3, 4]  // Minimize x1 + 2x2 + 3x3 + 4x4
     },
-    variables: {
-      bounds: [
-        { lower: 0 }, { lower: 0 }, { lower: 0 }, { lower: 0 }
-      ]
-    },
+    variables: [
+      {}, {}, {}, {}  // All default to: cont, [0, +∞)
+    ],
     constraints: {
       // Sparse format: only specify non-zero coefficients
       sparse: {
@@ -301,6 +296,7 @@ Use sparse format when:
 - **High Performance**: Built on the HiGHS solver, one of the fastest open-source optimization solvers
 - **Sparse Matrix Support**: Efficient handling of large-scale problems with sparse constraint matrices
 - **Type Safety**: Full TypeScript support with Zod validation for robust error handling
+- **Compact Variable Format**: Self-contained variable specifications with smart defaults
 - **Flexible Problem Types**: Supports continuous, integer, and binary variables
 - **Multiple Solver Methods**: Choose between simplex, interior point, and other algorithms
 - **Comprehensive Output**: Returns primal solution, dual values, and reduced costs

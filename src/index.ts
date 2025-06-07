@@ -87,7 +87,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const dualValues = [];
 
       for (let i = 0; i < problem.objective.linear.length; i++) {
-        const varName = problem.variables.names?.[i] || `x${i + 1}`;
+        const varName = problem.variables[i].name || `x${i + 1}`;
         const column = result.Columns[varName];
         if (column) {
           solutionValues.push(column.Primal || 0);

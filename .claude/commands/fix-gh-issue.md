@@ -21,7 +21,8 @@ Follow these steps:
     changesets. The change should not cover changes to the codebase itself. It
     should just cover the _effect_ of the change. Keep the description concise
     and compact. Feel free to elaborate a bit more in case of significant
-    changes.
+    changes. Don't use `knope document-change` since that doesn't work, calling
+    it from Claude.
 
 Bear in mind that in this project, for a knope changeset the format of the
 frontmatter needs to be something like this:

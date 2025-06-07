@@ -41,7 +41,7 @@ export function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): strin
   const objTerms = [];
   for (let i = 0; i < numVars; i++) {
     const coeff = objective.linear[i];
-    const varName = variables.names?.[i] || `x${i + 1}`;
+    const varName = variables[i].name || `x${i + 1}`;
     if (coeff !== 0) {
       if (coeff === 1) {
         objTerms.push(varName);
@@ -66,7 +66,8 @@ export function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): strin
     const terms = [];
     for (let j = 0; j < numVars; j++) {
       const coeff = row[j];
-      const varName = variables.names?.[j] || `x${j + 1}`;
+      const variable = variables[j];
+      const varName = variable.name || `x${j + 1}`;
       if (coeff !== 0) {
         if (coeff === 1) {
           terms.push(varName);
@@ -87,12 +88,19 @@ export function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): strin
   // Variable bounds
   lpString += "Bounds\n";
   for (let i = 0; i < numVars; i++) {
-    const varName = variables.names?.[i] || `x${i + 1}`;
-    const bound = variables.bounds[i];
+    const variable = variables[i];
+    const varName = variable.name || `x${i + 1}`;
 
-    // Handle missing upper/lower properties
-    const lower = bound.lower !== undefined ? bound.lower : null;
-    const upper = bound.upper !== undefined ? bound.upper : null;
+    // Apply smart defaults
+    const variableType = variable.type || "cont";
+    let lower = variable.lb !== undefined ? variable.lb : 0; // default to 0
+    let upper = variable.ub !== undefined ? variable.ub : Infinity; // default to +∞
+
+    // Binary variables automatically get [0, 1] bounds
+    if (variableType === "bin") {
+      lower = variable.lb !== undefined ? variable.lb : 0;
+      upper = variable.ub !== undefined ? variable.ub : 1;
+    }
 
     if (lower !== null && upper !== null) {
       if (lower === -Infinity && upper === Infinity) {
@@ -114,28 +122,29 @@ export function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): strin
   }
 
   // Variable types (integer/binary)
-  if (variables.types) {
-    const integerVars = [];
-    const binaryVars = [];
+  const integerVars = [];
+  const binaryVars = [];
 
-    for (let i = 0; i < numVars; i++) {
-      const varName = variables.names?.[i] || `x${i + 1}`;
-      if (variables.types[i] === "integer") {
-        integerVars.push(varName);
-      } else if (variables.types[i] === "binary") {
-        binaryVars.push(varName);
-      }
-    }
+  for (let i = 0; i < numVars; i++) {
+    const variable = variables[i];
+    const varName = variable.name || `x${i + 1}`;
+    const variableType = variable.type || "cont";
 
-    if (integerVars.length > 0) {
-      lpString += "General\n";
-      lpString += " " + integerVars.join(" ") + "\n";
+    if (variableType === "int") {
+      integerVars.push(varName);
+    } else if (variableType === "bin") {
+      binaryVars.push(varName);
     }
+  }
 
-    if (binaryVars.length > 0) {
-      lpString += "Binary\n";
-      lpString += " " + binaryVars.join(" ") + "\n";
-    }
+  if (integerVars.length > 0) {
+    lpString += "General\n";
+    lpString += " " + integerVars.join(" ") + "\n";
+  }
+
+  if (binaryVars.length > 0) {
+    lpString += "Binary\n";
+    lpString += " " + binaryVars.join(" ") + "\n";
   }
 
   lpString += "End\n";
