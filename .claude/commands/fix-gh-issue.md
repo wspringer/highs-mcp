@@ -22,3 +22,16 @@ Follow these steps:
     should just cover the _effect_ of the change. Keep the description concise
     and compact. Feel free to elaborate a bit more in case of significant
     changes.
+
+Bear in mind that in this project, for a knope changeset the format of the
+frontmatter needs to be something like this:
+
+```
+---
+default: major|minor|patch
+---
+```
+
+That is to say: use the key `default` instead of the project name.
+
+
