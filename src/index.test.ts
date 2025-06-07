@@ -212,12 +212,10 @@ describe("HiGHS MCP Server", () => {
               sense: ["<="],
               rhs: [4],
             },
-            variables: {
-              bounds: [
-                { lower: 0, upper: null },
-                { lower: 0, upper: null },
-              ],
-            },
+            variables: [
+              {}, // defaults: cont, [0, +∞)
+              {}, // defaults: cont, [0, +∞)
+            ],
           },
         },
       });
@@ -248,12 +246,10 @@ describe("HiGHS MCP Server", () => {
               sense: ["<="],
               rhs: [4],
             },
-            variables: {
-              bounds: [
-                { lower: 0, upper: null },
-                { lower: 0, upper: null },
-              ],
-            },
+            variables: [
+              {}, // defaults: cont, [0, +∞)
+              {}, // defaults: cont, [0, +∞)
+            ],
           },
         },
       });
@@ -288,14 +284,12 @@ describe("HiGHS MCP Server", () => {
               sense: [">=", ">="],
               rhs: [2, 3],
             },
-            variables: {
-              bounds: [
-                { lower: 0, upper: null },
-                { lower: 0, upper: null },
-                { lower: 0, upper: null },
-                { lower: 0, upper: null },
-              ],
-            },
+            variables: [
+              {}, // defaults: cont, [0, +∞)
+              {}, // defaults: cont, [0, +∞)
+              {}, // defaults: cont, [0, +∞)
+              {}, // defaults: cont, [0, +∞)
+            ],
           },
         },
       });
@@ -319,12 +313,10 @@ describe("HiGHS MCP Server", () => {
             objective: {
               linear: [25, 40],
             },
-            variables: {
-              bounds: [
-                { lower: 0, upper: null },
-                { lower: 0, upper: null },
-              ],
-            },
+            variables: [
+              {}, // defaults: cont, [0, +∞)
+              {}, // defaults: cont, [0, +∞)
+            ],
             constraints: {
               dense: [
                 [2, 3],
@@ -354,12 +346,10 @@ describe("HiGHS MCP Server", () => {
             objective: {
               linear: [1, 2],
             },
-            variables: {
-              bounds: [
-                { lower: 0 }, // Missing upper (defaults to +infinity)
-                { lower: 0 }, // Also set lower bound to avoid unboundedness
-              ],
-            },
+            variables: [
+              {}, // defaults: cont, [0, +∞)
+              {}, // defaults: cont, [0, +∞)
+            ],
             constraints: {
               dense: [[1, 1]],
               sense: ["<="],
@@ -385,10 +375,16 @@ describe("HiGHS MCP Server", () => {
             objective: {
               linear: [12.5, 14.2, 13.8, 11.9, 8.4, 9.1, 10.5, 6.2],
             },
-            variables: {
-              names: ["S1_W1", "S1_W2", "S2_W1", "S2_W2", "W1_C1", "W1_C2", "W2_C1", "W2_C2"],
-              bounds: Array(8).fill({ lower: 0 }),
-            },
+            variables: [
+              { name: "S1_W1" },
+              { name: "S1_W2" },
+              { name: "S2_W1" },
+              { name: "S2_W2" },
+              { name: "W1_C1" },
+              { name: "W1_C2" },
+              { name: "W2_C1" },
+              { name: "W2_C2" },
+            ],
             constraints: {
               dense: [
                 [1, 1, 0, 0, 0, 0, 0, 0], // S1 supply
@@ -421,14 +417,11 @@ describe("HiGHS MCP Server", () => {
             objective: {
               linear: [5, 3, 2],
             },
-            variables: {
-              bounds: [
-                { lower: 0, upper: null },
-                { lower: 0, upper: null },
-                { lower: 0, upper: 1 },
-              ],
-              types: ["integer", "continuous", "binary"],
-            },
+            variables: [
+              { type: "int" }, // integer, defaults to [0, +∞)
+              {}, // continuous (default), [0, +∞)
+              { type: "bin" }, // binary, defaults to [0, 1]
+            ],
             constraints: {
               dense: [[2, 1, 3]],
               sense: ["<="],
@@ -456,12 +449,10 @@ describe("HiGHS MCP Server", () => {
             objective: {
               linear: [1, 1],
             },
-            variables: {
-              bounds: [
-                { lower: 0, upper: null },
-                { lower: 0, upper: null },
-              ],
-            },
+            variables: [
+              {}, // defaults: cont, [0, +∞)
+              {}, // defaults: cont, [0, +∞)
+            ],
             constraints: {
               dense: [
                 [1, 1],
@@ -488,12 +479,10 @@ describe("HiGHS MCP Server", () => {
             objective: {
               linear: [1, 2],
             },
-            variables: {
-              bounds: [
-                { lower: 0, upper: null },
-                { lower: 0, upper: null },
-              ],
-            },
+            variables: [
+              {}, // defaults: cont, [0, +∞)
+              {}, // defaults: cont, [0, +∞)
+            ],
             constraints: {
               dense: [[1, 1]],
               sense: [">="],
@@ -547,7 +536,7 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "invalid", // Invalid sense value
             objective: { linear: [1, 2] },
-            variables: { bounds: [{}, {}] },
+            variables: [{}, {}],
             constraints: {
               dense: [[1, 1]],
               sense: ["<="],
@@ -568,9 +557,9 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "minimize",
             objective: { linear: [] }, // Empty array not allowed
-            variables: { bounds: [] },
+            variables: [],
             constraints: {
-              matrix: [],
+              dense: [],
               sense: [],
               rhs: [],
             },
@@ -589,7 +578,7 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "minimize",
             objective: { linear: [1, 2] }, // 2 variables
-            variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
+            variables: [{}, {}],
             constraints: {
               dense: [[1, 1, 1]], // 3 variables in constraint (mismatch)
               sense: ["<="],
@@ -610,7 +599,7 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "minimize",
             objective: { linear: [1, 2, 3] }, // 3 variables
-            variables: { bounds: [{ lower: 0 }, { lower: 0 }, { lower: 0 }] },
+            variables: [{}, {}, {}],
             constraints: {
               dense: [
                 [1, 1], // Row 0: 2 coefficients (should be 3)
@@ -641,7 +630,7 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "minimize",
             objective: { linear: [1, 2] },
-            variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
+            variables: [{}, {}],
             constraints: {
               dense: [
                 [1, 1],
@@ -662,16 +651,17 @@ describe("HiGHS MCP Server", () => {
       );
     });
 
-    it("should provide specific error for variable bounds array length mismatch", async () => {
+    it("should provide specific error for variables array length mismatch", async () => {
       const response = await sendRequest("tools/call", {
         name: "optimize-mip-lp-tool",
         arguments: {
           problem: {
             sense: "maximize",
             objective: { linear: [5, 3, 2] }, // 3 variables
-            variables: {
-              bounds: [{ lower: 0 }, { lower: 0 }], // Only 2 bounds (should be 3)
-            },
+            variables: [
+              {}, // Only 2 variables (should be 3)
+              {},
+            ],
             constraints: {
               dense: [[1, 1, 1]],
               sense: ["<="],
@@ -683,22 +673,21 @@ describe("HiGHS MCP Server", () => {
 
       expect(response.error).toBeDefined();
       expect(response.error.message).toContain("Invalid parameters");
-      expect(response.error.message).toContain(
-        "Variable bounds array has 2 elements but expected 3",
-      );
+      expect(response.error.message).toContain("Variables array has 2 elements but expected 3");
     });
 
-    it("should provide specific error for variable types array length mismatch", async () => {
+    it("should validate variable types", async () => {
       const response = await sendRequest("tools/call", {
         name: "optimize-mip-lp-tool",
         arguments: {
           problem: {
             sense: "maximize",
             objective: { linear: [5, 3, 2] }, // 3 variables
-            variables: {
-              bounds: [{ lower: 0 }, { lower: 0 }, { lower: 0 }],
-              types: ["integer", "continuous"], // Only 2 types (should be 3)
-            },
+            variables: [
+              { type: "cont" },
+              { type: "invalid_type" as any }, // Invalid type
+              { type: "int" },
+            ],
             constraints: {
               dense: [[1, 1, 1]],
               sense: ["<="],
@@ -710,22 +699,21 @@ describe("HiGHS MCP Server", () => {
 
       expect(response.error).toBeDefined();
       expect(response.error.message).toContain("Invalid parameters");
-      expect(response.error.message).toContain(
-        "Variable types array has 2 elements but expected 3",
-      );
     });
 
-    it("should provide specific error for variable names array length mismatch", async () => {
+    it("should handle compact format with mixed names and defaults", async () => {
       const response = await sendRequest("tools/call", {
         name: "optimize-mip-lp-tool",
         arguments: {
           problem: {
             sense: "minimize",
             objective: { linear: [1, 2, 3, 4] }, // 4 variables
-            variables: {
-              bounds: [{ lower: 0 }, { lower: 0 }, { lower: 0 }, { lower: 0 }],
-              names: ["x1", "x2"], // Only 2 names (should be 4)
-            },
+            variables: [
+              { name: "profit" }, // named variable
+              {}, // auto-named x2
+              { name: "cost", ub: 100 }, // named with upper bound
+              { type: "bin" }, // auto-named x4, binary
+            ],
             constraints: {
               dense: [[1, 1, 1, 1]],
               sense: ["<="],
@@ -735,11 +723,9 @@ describe("HiGHS MCP Server", () => {
         },
       });
 
-      expect(response.error).toBeDefined();
-      expect(response.error.message).toContain("Invalid parameters");
-      expect(response.error.message).toContain(
-        "Variable names array has 2 elements but expected 4",
-      );
+      expect(response.result).toBeDefined();
+      const result = JSON.parse(response.result.content[0].text);
+      expect(result.status).toBe("optimal");
     });
 
     it("should report multiple dimension errors at once", async () => {
@@ -749,11 +735,10 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "minimize",
             objective: { linear: [1, 2, 3] }, // 3 variables
-            variables: {
-              bounds: [{ lower: 0 }, { lower: 0 }], // Wrong: 2 instead of 3
-              types: ["integer"], // Wrong: 1 instead of 3
-              names: ["x1", "x2", "x3", "x4"], // Wrong: 4 instead of 3
-            },
+            variables: [
+              {}, // Only 2 variables provided (should be 3)
+              {},
+            ],
             constraints: {
               dense: [
                 [1, 1], // Wrong: 2 instead of 3
@@ -778,39 +763,7 @@ describe("HiGHS MCP Server", () => {
       expect(response.error.message).toContain(
         "Constraint sense array has 1 elements but expected 2",
       );
-      expect(response.error.message).toContain(
-        "Variable bounds array has 2 elements but expected 3",
-      );
-      expect(response.error.message).toContain(
-        "Variable types array has 1 elements but expected 3",
-      );
-      expect(response.error.message).toContain(
-        "Variable names array has 4 elements but expected 3",
-      );
-    });
-
-    it("should validate variable types", async () => {
-      const response = await sendRequest("tools/call", {
-        name: "optimize-mip-lp-tool",
-        arguments: {
-          problem: {
-            sense: "minimize",
-            objective: { linear: [1, 2] },
-            variables: {
-              bounds: [{ lower: 0 }, { lower: 0 }],
-              types: ["continuous", "invalid_type"], // Invalid type
-            },
-            constraints: {
-              dense: [[1, 1]],
-              sense: ["<="],
-              rhs: [10],
-            },
-          },
-        },
-      });
-
-      expect(response.error).toBeDefined();
-      expect(response.error.message).toContain("Invalid parameters");
+      expect(response.error.message).toContain("Variables array has 2 elements but expected 3");
     });
 
     it("should validate sparse matrix format", async () => {
@@ -820,7 +773,7 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "minimize",
             objective: { linear: [1, 2] }, // 2 variables
-            variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
+            variables: [{}, {}],
             constraints: {
               sparse: {
                 rows: [0, 0],
@@ -847,7 +800,7 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "minimize",
             objective: { linear: [1, 2] }, // 2 variables
-            variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
+            variables: [{}, {}],
             constraints: {
               sparse: {
                 rows: [0, 1], // Row index 1 exceeds constraints (only 1 constraint)
@@ -875,7 +828,7 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "minimize",
             objective: { linear: [1, 2, 3] }, // 3 variables
-            variables: { bounds: [{ lower: 0 }, { lower: 0 }, { lower: 0 }] },
+            variables: [{}, {}, {}],
             constraints: {
               sparse: {
                 rows: [0, 0],
@@ -904,7 +857,7 @@ describe("HiGHS MCP Server", () => {
           problem: {
             sense: "minimize",
             objective: { linear: [1, 2] },
-            variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
+            variables: [{}, {}],
             constraints: {
               dense: [[1, 1]],
               sense: ["<="],

@@ -1,16 +1,26 @@
 import { z } from "zod";
-export const VariableBoundSchema = z.object({
-  lower: z.number().nullable().optional().describe("Lower bound for the variable"),
-  upper: z.number().nullable().optional().describe("Upper bound for the variable"),
-});
 
 export const ConstraintSenseSchema = z
   .enum(["<=", ">=", "="])
   .describe("Constraint sense (direction)");
 
-export const VariableTypeSchema = z
-  .enum(["continuous", "integer", "binary"])
-  .describe("Type of variable");
+// New compact variable type schema
+export const CompactVariableTypeSchema = z
+  .enum(["cont", "int", "bin"])
+  .describe("Type of variable (compact format)");
+
+// New compact variable schema
+export const CompactVariableSchema = z.object({
+  name: z.string().optional().describe("Variable name (optional, defaults to x1, x2, etc.)"),
+  lb: z.number().optional().describe("Lower bound (optional, defaults to 0)"),
+  ub: z
+    .number()
+    .optional()
+    .describe("Upper bound (optional, defaults to +∞, except binary gets 1)"),
+  type: CompactVariableTypeSchema.optional().describe(
+    "Variable type (optional, defaults to 'cont')",
+  ),
+});
 
 export const ObjectiveSchema = z.object({
   linear: z
@@ -93,25 +103,19 @@ export const ConstraintsSchema = z
 Use SPARSE format when: problem has > 1000 variables/constraints or < 10% non-zero coefficients.`,
   );
 
-export const VariablesSchema = z.object({
-  bounds: z
-    .array(VariableBoundSchema)
-    .describe(
-      "Bounds for each variable. The array length must equal the number of variables in the objective function. Use null for unbounded variables.",
-    ),
-  types: z
-    .array(VariableTypeSchema)
-    .optional()
-    .describe(
-      "Type of each variable (optional, defaults to continuous). If provided, the array length must equal the number of variables in the objective function. Valid values: 'continuous', 'integer', 'binary'.",
-    ),
-  names: z
-    .array(z.string())
-    .optional()
-    .describe(
-      "Names for each variable (optional). If provided, the array length must equal the number of variables in the objective function.",
-    ),
-});
+export const VariablesSchema = z
+  .array(CompactVariableSchema)
+  .min(1, "At least one variable is required")
+  .describe(
+    `Variables in compact, self-contained format. Each variable object can specify:
+    
+- name: Optional variable name (defaults to x1, x2, etc.)
+- lb: Lower bound (defaults to 0)
+- ub: Upper bound (defaults to +∞, except binary gets 1)
+- type: "cont" | "int" | "bin" (defaults to "cont")
+
+Example: [{ name: "profit", ub: 100 }, { type: "bin" }, {}]`,
+  );
 
 export const ProblemSchema = z
   .object({
@@ -215,27 +219,12 @@ export const ProblemSchema = z
       });
     }
 
-    if (data.variables.bounds.length !== numVars) {
+    // Check that variables array length matches objective length
+    if (data.variables.length !== numVars) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Variable bounds array has ${data.variables.bounds.length} elements but expected ${numVars} (matching the number of variables in the objective function)`,
-        path: ["variables", "bounds"],
-      });
-    }
-
-    if (data.variables.types && data.variables.types.length !== numVars) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Variable types array has ${data.variables.types.length} elements but expected ${numVars} (matching the number of variables in the objective function)`,
-        path: ["variables", "types"],
-      });
-    }
-
-    if (data.variables.names && data.variables.names.length !== numVars) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Variable names array has ${data.variables.names.length} elements but expected ${numVars} (matching the number of variables in the objective function)`,
-        path: ["variables", "names"],
+        message: `Variables array has ${data.variables.length} elements but expected ${numVars} (matching the number of variables in the objective function)`,
+        path: ["variables"],
       });
     }
   });
@@ -275,9 +264,7 @@ export const OptimizationArgsSchema = z.object({
     - For sparse format: shape[1] must equal number of variables in objective
     - constraints.sense length must equal number of constraints
     - constraints.rhs length must equal number of constraints
-    - variables.bounds length must equal number of variables (objective coefficients)
-    - variables.types length (if provided) must equal number of variables
-    - variables.names length (if provided) must equal number of variables
+    - variables array length must equal number of variables (objective coefficients)
     
     POSSIBLE SOLVER STATUSES:
     - 'Optimal': Solution found successfully
