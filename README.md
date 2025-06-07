@@ -116,9 +116,48 @@ The server provides a single tool: `optimize-mip-lp-tool`
     }
   },
   options?: {
-    time_limit?: number,  // Time limit in seconds
+    // Solver Control
+    time_limit?: number,              // Time limit in seconds
     presolve?: 'off' | 'choose' | 'on',
-    solver?: 'simplex' | 'choose' | 'ipm' | 'pdlp'
+    solver?: 'simplex' | 'choose' | 'ipm' | 'pdlp',
+    parallel?: 'off' | 'choose' | 'on',
+    threads?: number,                 // Number of threads (0=automatic)
+    random_seed?: number,             // Random seed for reproducibility
+    
+    // Tolerances
+    primal_feasibility_tolerance?: number,  // Default: 1e-7
+    dual_feasibility_tolerance?: number,    // Default: 1e-7
+    ipm_optimality_tolerance?: number,      // Default: 1e-8
+    infinite_cost?: number,                 // Default: 1e20
+    infinite_bound?: number,                // Default: 1e20
+    
+    // Simplex Options
+    simplex_strategy?: number,              // 0-4: algorithm strategy
+    simplex_scale_strategy?: number,        // 0-5: scaling strategy
+    simplex_dual_edge_weight_strategy?: number,  // -1 to 2: pricing
+    simplex_iteration_limit?: number,       // Max iterations
+    
+    // MIP Options
+    mip_detect_symmetry?: boolean,          // Detect symmetry
+    mip_max_nodes?: number,                 // Max branch-and-bound nodes
+    mip_rel_gap?: number,                   // Relative gap tolerance
+    mip_abs_gap?: number,                   // Absolute gap tolerance
+    mip_feasibility_tolerance?: number,     // MIP feasibility tolerance
+    
+    // Logging
+    output_flag?: boolean,                  // Enable solver output
+    log_to_console?: boolean,               // Console logging
+    highs_debug_level?: number,             // 0-4: debug verbosity
+    
+    // Algorithm-specific
+    ipm_iteration_limit?: number,           // IPM max iterations
+    pdlp_scaling?: boolean,                 // PDLP scaling
+    pdlp_iteration_limit?: number,          // PDLP max iterations
+    
+    // File I/O
+    write_solution_to_file?: boolean,       // Write solution to file
+    solution_file?: string,                 // Solution file path
+    write_solution_style?: number           // Solution format style
   }
 }
 ```
@@ -290,6 +329,60 @@ Use sparse format when:
 - Problem has > 1000 variables or constraints
 - Matrix has < 10% non-zero coefficients
 - Memory efficiency is important
+
+### 6. Enhanced Solver Options
+
+Fine-tune solver behavior with comprehensive HiGHS options:
+
+```javascript
+{
+  problem: {
+    sense: 'minimize',
+    objective: { linear: [1, 1] },
+    variables: [{}, {}],
+    constraints: {
+      dense: [[1, 1]],
+      sense: ['>='],
+      rhs: [1]
+    }
+  },
+  options: {
+    // Algorithm Control
+    solver: 'simplex',
+    simplex_strategy: 1,                    // Dual simplex
+    simplex_dual_edge_weight_strategy: 1,   // Devex pricing
+    simplex_scale_strategy: 2,              // Equilibration scaling
+    
+    // Performance Tuning
+    parallel: 'on',
+    threads: 4,
+    simplex_iteration_limit: 10000,
+    
+    // Tolerances
+    primal_feasibility_tolerance: 1e-8,
+    dual_feasibility_tolerance: 1e-8,
+    
+    // Debugging
+    output_flag: true,
+    log_to_console: true,
+    highs_debug_level: 1,
+    
+    // MIP Control (for integer problems)
+    mip_detect_symmetry: true,
+    mip_max_nodes: 5000,
+    mip_rel_gap: 0.001
+  }
+}
+```
+
+**Key Option Categories:**
+
+- **Solver Control**: Algorithm selection, parallelization, time limits
+- **Tolerances**: Precision control for feasibility and optimality
+- **Simplex Options**: Strategy, scaling, pricing, iteration limits
+- **MIP Options**: Symmetry detection, node limits, gap tolerances
+- **Logging**: Output control, debugging levels, file output
+- **Algorithm-specific**: IPM and PDLP specialized options
 
 ## Features
 
