@@ -4,7 +4,33 @@ import { ProblemSchema } from "./schemas.js";
 export function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): string {
   const { sense, objective, constraints, variables } = problem;
   const numVars = objective.linear.length;
-  const numConstraints = constraints.matrix.length;
+
+  // Determine number of constraints and convert sparse to dense if needed
+  let constraintMatrix: number[][];
+  let numConstraints: number;
+
+  if ("dense" in constraints) {
+    // Already in dense format
+    constraintMatrix = constraints.dense;
+    numConstraints = constraintMatrix.length;
+  } else if ("sparse" in constraints) {
+    // Convert sparse to dense format
+    const sparse = constraints.sparse;
+    [numConstraints] = sparse.shape;
+    const numCols = sparse.shape[1];
+
+    // Initialize dense matrix with zeros
+    constraintMatrix = Array(numConstraints)
+      .fill(null)
+      .map(() => Array(numCols).fill(0));
+
+    // Fill in non-zero values
+    for (let i = 0; i < sparse.values.length; i++) {
+      constraintMatrix[sparse.rows[i]][sparse.cols[i]] = sparse.values[i];
+    }
+  } else {
+    throw new Error("Invalid constraint format");
+  }
 
   let lpString = "";
 
@@ -33,7 +59,7 @@ export function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): strin
   // Constraints
   lpString += "Subject To\n";
   for (let i = 0; i < numConstraints; i++) {
-    const row = constraints.matrix[i];
+    const row = constraintMatrix[i];
     const sense = constraints.sense[i];
     const rhs = constraints.rhs[i];
 
