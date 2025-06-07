@@ -231,26 +231,262 @@ export const ProblemSchema = z
 
 export const OptionsSchema = z
   .object({
+    // Solver Control
     time_limit: z
       .number()
       .positive()
       .optional()
       .describe(
-        "Time limit in seconds. Must be positive. Solver will terminate with 'Time limit reached' status if exceeded.",
+        "Maximum time allowed for solving in seconds. Solver will terminate with 'Time limit reached' status if exceeded.",
       ),
     presolve: z
       .enum(["off", "choose", "on"])
       .optional()
-      .describe("Presolve option. Valid values: 'off', 'choose', 'on'. Default is 'choose'."),
+      .describe("Controls the presolve phase. Default is 'choose'."),
     solver: z
       .enum(["simplex", "choose", "ipm", "pdlp"])
       .optional()
       .describe(
-        "Solver method. Valid values: 'simplex', 'choose', 'ipm', 'pdlp'. Default is 'choose'.",
+        "Selects the solver algorithm. For MIP/QP problems, integrality constraints or quadratic terms are ignored if specific solver is chosen.",
       ),
+    parallel: z
+      .enum(["off", "choose", "on"])
+      .optional()
+      .describe("Controls parallel execution. Default is 'choose'."),
+    run_crossover: z
+      .enum(["off", "choose", "on"])
+      .optional()
+      .describe("Whether to run crossover after IPM. Default is 'choose'."),
+    threads: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe("Number of threads to use. 0 means automatic. Default is 0."),
+    random_seed: z
+      .number()
+      .int()
+      .min(0)
+      .max(2147483647)
+      .optional()
+      .describe("Random seed for reproducibility."),
+
+    // Tolerances
+    primal_feasibility_tolerance: z
+      .number()
+      .min(1e-10)
+      .optional()
+      .describe("Tolerance for primal feasibility. Default is 1e-7."),
+    dual_feasibility_tolerance: z
+      .number()
+      .min(1e-10)
+      .optional()
+      .describe("Tolerance for dual feasibility. Default is 1e-7."),
+    ipm_optimality_tolerance: z
+      .number()
+      .min(1e-12)
+      .optional()
+      .describe("Optimality tolerance for IPM solver. Default is 1e-8."),
+    infinite_cost: z
+      .number()
+      .min(1e15)
+      .optional()
+      .describe("Values >= this are treated as infinite cost. Default is 1e20."),
+    infinite_bound: z
+      .number()
+      .min(1e15)
+      .optional()
+      .describe("Values >= this are treated as infinite bounds. Default is 1e20."),
+    objective_bound: z
+      .number()
+      .optional()
+      .describe("Objective bound for termination of dual simplex. Default is inf."),
+    objective_target: z
+      .number()
+      .optional()
+      .describe("Objective target for termination of MIP solver. Default is -inf."),
+    
+    // Simplex Options
+    simplex_strategy: z
+      .number()
+      .int()
+      .min(0)
+      .max(4)
+      .optional()
+      .describe("Strategy for simplex solver. 0=auto, 1=dual serial, 2=dual PAMI, 3=dual SIP, 4=primal. Default is 1."),
+    simplex_scale_strategy: z
+      .number()
+      .int()
+      .min(0)
+      .max(5)
+      .optional()
+      .describe("Scaling strategy. 0=none, 1=auto, 2=equilibration, 3=forced equilibration, 4=max value 0, 5=max value 1. Default is 1."),
+    simplex_dual_edge_weight_strategy: z
+      .number()
+      .int()
+      .min(-1)
+      .max(2)
+      .optional()
+      .describe("Dual edge weight strategy. -1=auto, 0=Dantzig, 1=Devex, 2=steepest edge. Default is -1."),
+    simplex_primal_edge_weight_strategy: z
+      .number()
+      .int()
+      .min(-1)
+      .max(2)
+      .optional()
+      .describe("Primal edge weight strategy. -1=auto, 0=Dantzig, 1=Devex, 2=steepest edge. Default is -1."),
+    simplex_iteration_limit: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Maximum iterations for simplex method. Default is 2147483647."),
+    simplex_update_limit: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Maximum UPDATE operations before refactorization. Default is 5000."),
+
+    // Logging
+    output_flag: z
+      .boolean()
+      .optional()
+      .describe("Enables or disables all solver output. Default is true."),
+    log_to_console: z
+      .boolean()
+      .optional()
+      .describe("Enables or disables console logging. Default is true."),
+    log_file: z
+      .string()
+      .optional()
+      .describe("Path to log file for solver output."),
+    highs_debug_level: z
+      .number()
+      .int()
+      .min(0)
+      .max(4)
+      .optional()
+      .describe("Level of debugging output. 0=none, 4=maximum. Default is 0."),
+
+    // MIP Options
+    mip_detect_symmetry: z
+      .boolean()
+      .optional()
+      .describe("Whether to detect and exploit symmetry in MIP. Default is true."),
+    mip_max_nodes: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe("Maximum nodes in branch-and-bound tree. Default is 2147483647."),
+    mip_max_stall_nodes: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe("Maximum nodes where estimate exceeds cutoff bound. Default is 2147483647."),
+    mip_max_leaves: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe("Maximum number of leaf nodes. Default is 2147483647."),
+    mip_feasibility_tolerance: z
+      .number()
+      .min(1e-10)
+      .optional()
+      .describe("Tolerance for MIP feasibility. Default is 1e-6."),
+    mip_rel_gap: z
+      .number()
+      .min(0)
+      .optional()
+      .describe("Relative gap |ub-lb|/|ub| tolerance for MIP termination. Default is 1e-4."),
+    mip_abs_gap: z
+      .number()
+      .min(0)
+      .optional()
+      .describe("Absolute gap |ub-lb| tolerance for MIP termination. Default is 1e-6."),
+
+    // IPM Options
+    ipm_iteration_limit: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Maximum iterations for IPM solver. Default is 2147483647."),
+
+    // PDLP Options
+    pdlp_scaling: z
+      .boolean()
+      .optional()
+      .describe("Enable scaling in PDLP solver. Default is true."),
+    pdlp_iteration_limit: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Maximum iterations for PDLP solver. Default is 2147483647."),
+    pdlp_d_gap_tol: z
+      .number()
+      .min(1e-12)
+      .optional()
+      .describe("Duality gap tolerance for PDLP solver. Default is 1e-4."),
+
+    // File I/O
+    write_solution_to_file: z
+      .boolean()
+      .optional()
+      .describe("Whether to write the solution to a file. Default is false."),
+    solution_file: z
+      .string()
+      .optional()
+      .describe("Path where the solution will be written."),
+    write_solution_style: z
+      .number()
+      .int()
+      .min(-1)
+      .max(4)
+      .optional()
+      .describe("Style of solution file. 0=HiGHS raw, 1=HiGHS pretty, 2=Glpsol raw, 3=Glpsol pretty, 4=HiGHS sparse. Default is 0."),
   })
   .optional()
-  .describe("Solver options. Controls solver behavior and termination criteria.");
+  .describe(
+    `Solver options for fine-grained control over HiGHS behavior and performance.
+    
+Options are organized into categories:
+
+**Solver Control:**
+- time_limit, presolve, solver, parallel, threads
+- run_crossover, random_seed
+
+**Tolerances:**
+- primal/dual_feasibility_tolerance
+- ipm_optimality_tolerance
+- infinite_cost/bound, objective_bound/target
+
+**Simplex Options:**
+- simplex_strategy, simplex_scale_strategy
+- edge weight strategies, iteration/update limits
+
+**Logging:**
+- output_flag, log_to_console, log_file
+- highs_debug_level
+
+**MIP Options:**
+- mip_detect_symmetry, max nodes/leaves
+- feasibility tolerance, gap tolerances
+
+**Algorithm-specific:**
+- IPM: ipm_iteration_limit
+- PDLP: pdlp_scaling, pdlp_iteration_limit, pdlp_d_gap_tol
+
+**File I/O:**
+- write_solution_to_file, solution_file
+- write_solution_style
+
+All options are optional with sensible defaults.`,
+  );
 
 export const OptimizationArgsSchema = z.object({
   problem: ProblemSchema.describe(`The optimization problem specification. 

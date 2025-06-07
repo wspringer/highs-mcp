@@ -501,6 +501,422 @@ describe("HiGHS MCP Server", () => {
       const result = JSON.parse(response.result.content[0].text);
       expect(result.status).toBe("optimal");
     });
+
+    it("should handle enhanced algorithm control options", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "maximize",
+            objective: {
+              linear: [3, 2],
+            },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [4],
+            },
+          },
+          options: {
+            solver: "simplex",
+            simplex_dual_edge_weight_strategy: 1, // Devex
+            simplex_strategy: 1, // Dual serial
+            simplex_scale_strategy: 2, // Equilibration scaling
+          },
+        },
+      });
+
+      expect(response.result).toBeDefined();
+      const result = JSON.parse(response.result.content[0].text);
+      expect(result.status).toBe("optimal");
+    });
+
+    it("should handle performance tuning options", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: {
+              linear: [1, 1],
+            },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: [">="],
+              rhs: [1],
+            },
+          },
+          options: {
+            simplex_iteration_limit: 1000,
+            ipm_iteration_limit: 500,
+            random_seed: 42,
+          },
+        },
+      });
+
+      expect(response.result).toBeDefined();
+      const result = JSON.parse(response.result.content[0].text);
+      expect(result.status).toBe("optimal");
+    });
+
+    it("should handle numerical tolerance options", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: {
+              linear: [1, 2],
+            },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [3],
+            },
+          },
+          options: {
+            primal_feasibility_tolerance: 1e-6,
+            dual_feasibility_tolerance: 1e-6,
+            ipm_optimality_tolerance: 1e-7,
+            infinite_cost: 1e18,
+          },
+        },
+      });
+
+      expect(response.result).toBeDefined();
+      const result = JSON.parse(response.result.content[0].text);
+      expect(result.status).toBe("optimal");
+    });
+
+    it("should handle MIP-specific options", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "maximize",
+            objective: {
+              linear: [5, 3],
+            },
+            variables: [
+              { type: "int" },
+              { type: "int" },
+            ],
+            constraints: {
+              dense: [[2, 1]],
+              sense: ["<="],
+              rhs: [5],
+            },
+          },
+          options: {
+            mip_max_nodes: 1000,
+            mip_rel_gap: 0.01,
+            mip_feasibility_tolerance: 1e-5,
+            mip_detect_symmetry: true,
+            mip_abs_gap: 1e-4,
+          },
+        },
+      });
+
+      expect(response.result).toBeDefined();
+      const result = JSON.parse(response.result.content[0].text);
+      expect(result.status).toBe("optimal");
+      // Verify solution has integer values
+      expect(Number.isInteger(result.solution[0])).toBe(true);
+      expect(Number.isInteger(result.solution[1])).toBe(true);
+    });
+
+    it("should handle advanced logging and output options", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: {
+              linear: [1, 1],
+            },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: [">="],
+              rhs: [1],
+            },
+          },
+          options: {
+            output_flag: true,
+            write_solution_to_file: false,
+            write_solution_style: 1,
+          },
+        },
+      });
+
+      expect(response.result).toBeDefined();
+      const result = JSON.parse(response.result.content[0].text);
+      expect(result.status).toBe("optimal");
+    });
+
+    it("should handle comprehensive option combinations", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "maximize",
+            objective: {
+              linear: [40, 30],
+            },
+            variables: [
+              { name: "x1", ub: 10 },
+              { name: "x2", ub: 8 },
+            ],
+            constraints: {
+              dense: [
+                [2, 1],
+                [1, 2],
+              ],
+              sense: ["<=", "<="],
+              rhs: [16, 14],
+            },
+          },
+          options: {
+            // Basic control
+            time_limit: 30,
+            presolve: "on",
+            solver: "simplex",
+            
+            // Algorithm tuning
+            simplex_dual_edge_weight_strategy: 1,
+            
+            // Include output_flag set to true (its default)
+            output_flag: true,
+          },
+        },
+      });
+
+      expect(response.result).toBeDefined();
+      const result = JSON.parse(response.result.content[0].text);
+      expect(result.status).toBe("optimal");
+      expect(result.objective_value).toBeGreaterThan(0);
+    });
+  });
+
+  describe("Enhanced Solver Options Validation", () => {
+    it("should validate invalid edge weight strategy", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
+            },
+          },
+          options: {
+            simplex_dual_edge_weight_strategy: 5, // Invalid: out of range
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+    });
+
+    it("should validate unknown solver options", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
+            },
+          },
+          options: {
+            simplex_dual_edge_weight_strategy: "invalid_string", // Invalid type - should be number
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+    });
+
+    it("should validate invalid tolerance values", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
+            },
+          },
+          options: {
+            primal_feasibility_tolerance: -1e-7, // Invalid negative tolerance
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+    });
+
+    it("should validate invalid iteration limits", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
+            },
+          },
+          options: {
+            simplex_iteration_limit: 0, // Invalid zero limit
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+    });
+
+    it("should validate invalid MIP gap", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
+            },
+          },
+          options: {
+            mip_rel_gap: -0.01, // Invalid negative gap
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+    });
+
+    it("should validate invalid output flag type", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
+            },
+          },
+          options: {
+            output_flag: "invalid_boolean", // Invalid: should be boolean
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+    });
+
+    it("should validate invalid simplex strategy", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
+            },
+          },
+          options: {
+            simplex_strategy: 10, // Invalid: out of range (0-4)
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+    });
+
+    it("should validate invalid debug level", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
+            },
+          },
+          options: {
+            highs_debug_level: 10, // Invalid: out of range (0-4)
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+    });
+
+    it("should validate invalid thread count", async () => {
+      const response = await sendRequest("tools/call", {
+        name: "optimize-mip-lp-tool",
+        arguments: {
+          problem: {
+            sense: "minimize",
+            objective: { linear: [1, 2] },
+            variables: [{}, {}],
+            constraints: {
+              dense: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
+            },
+          },
+          options: {
+            threads: -5, // Invalid: must be non-negative
+          },
+        },
+      });
+
+      expect(response.error).toBeDefined();
+      expect(response.error.message).toContain("Invalid parameters");
+    });
   });
 
   describe("Error Handling", () => {
