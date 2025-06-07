@@ -205,12 +205,8 @@ describe("HiGHS MCP Server", () => {
             },
             constraints: {
               matrix: [[1, 1]],
-              bounds: [
-                {
-                  lower: null,
-                  upper: 4,
-                },
-              ],
+              sense: ["<="],
+              rhs: [4],
             },
             variables: {
               bounds: [
@@ -245,14 +241,12 @@ describe("HiGHS MCP Server", () => {
               ],
             },
             constraints: {
-              bounds: [
-                { lower: null, upper: 100 },
-                { lower: null, upper: 80 },
-              ],
               matrix: [
                 [2, 3],
                 [1, 2],
               ],
+              sense: ["<=", "<="],
+              rhs: [100, 80],
             },
           },
         },
@@ -282,10 +276,9 @@ describe("HiGHS MCP Server", () => {
               ],
             },
             constraints: {
-              bounds: [
-                { upper: 10 }, // Just an upper bound
-              ],
               matrix: [[1, 1]],
+              sense: ["<="],
+              rhs: [10],
             },
           },
         },
@@ -312,14 +305,6 @@ describe("HiGHS MCP Server", () => {
               bounds: Array(8).fill({ lower: 0 }),
             },
             constraints: {
-              bounds: [
-                { upper: 50 }, // Supply from S1
-                { upper: 40 }, // Supply from S2
-                { upper: 0 }, // Flow conservation at W1
-                { upper: 0 }, // Flow conservation at W2
-                { lower: 30 }, // Demand at C1
-                { lower: 25 }, // Demand at C2
-              ],
               matrix: [
                 [1, 1, 0, 0, 0, 0, 0, 0], // S1 supply
                 [0, 0, 1, 1, 0, 0, 0, 0], // S2 supply
@@ -328,6 +313,8 @@ describe("HiGHS MCP Server", () => {
                 [0, 0, 0, 0, 1, 0, 1, 0], // C1 demand
                 [0, 0, 0, 0, 0, 1, 0, 1], // C2 demand
               ],
+              sense: ["<=", "<=", "=", "=", ">=", ">="],
+              rhs: [50, 40, 0, 0, 30, 25],
             },
           },
         },
@@ -358,8 +345,9 @@ describe("HiGHS MCP Server", () => {
               types: ["integer", "continuous", "binary"],
             },
             constraints: {
-              bounds: [{ upper: 10 }],
               matrix: [[2, 1, 3]],
+              sense: ["<="],
+              rhs: [10],
             },
           },
         },
@@ -390,11 +378,12 @@ describe("HiGHS MCP Server", () => {
               ],
             },
             constraints: {
-              bounds: [{ lower: 10 }, { upper: 5 }],
               matrix: [
                 [1, 1],
                 [1, 1],
               ],
+              sense: [">=", "<="],
+              rhs: [10, 5],
             },
           },
         },
@@ -421,8 +410,9 @@ describe("HiGHS MCP Server", () => {
               ],
             },
             constraints: {
-              bounds: [{ lower: 1 }],
               matrix: [[1, 1]],
+              sense: [">="],
+              rhs: [1],
             },
           },
           options: {
@@ -475,7 +465,8 @@ describe("HiGHS MCP Server", () => {
             variables: { bounds: [{}, {}] },
             constraints: {
               matrix: [[1, 1]],
-              bounds: [{}],
+              sense: ["<="],
+              rhs: [1],
             },
           },
         },
@@ -495,7 +486,8 @@ describe("HiGHS MCP Server", () => {
             variables: { bounds: [] },
             constraints: {
               matrix: [],
-              bounds: [],
+              sense: [],
+              rhs: [],
             },
           },
         },
@@ -515,7 +507,8 @@ describe("HiGHS MCP Server", () => {
             variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
             constraints: {
               matrix: [[1, 1, 1]], // 3 variables in constraint (mismatch)
-              bounds: [{ upper: 10 }],
+              sense: ["<="],
+              rhs: [10],
             },
           },
         },
@@ -539,7 +532,8 @@ describe("HiGHS MCP Server", () => {
                 [1, 1, 1], // Row 1: 3 coefficients (correct)
                 [1], // Row 2: 1 coefficient (should be 3)
               ],
-              bounds: [{ upper: 10 }, { upper: 20 }, { upper: 15 }],
+              sense: ["<=", "<=", "<="],
+              rhs: [10, 20, 15],
             },
           },
         },
@@ -569,7 +563,8 @@ describe("HiGHS MCP Server", () => {
                 [2, 2],
                 [3, 3],
               ], // 3 constraints
-              bounds: [{ upper: 10 }, { upper: 20 }], // Only 2 bounds (should be 3)
+              sense: ["<=", "<="], // Only 2 senses (should be 3)
+              rhs: [10, 20], // Only 2 rhs (should be 3)
             },
           },
         },
@@ -578,7 +573,7 @@ describe("HiGHS MCP Server", () => {
       expect(response.error).toBeDefined();
       expect(response.error.message).toContain("Invalid parameters");
       expect(response.error.message).toContain(
-        "Constraint bounds array has 2 elements but expected 3",
+        "Constraint sense array has 2 elements but expected 3",
       );
     });
 
@@ -594,7 +589,8 @@ describe("HiGHS MCP Server", () => {
             },
             constraints: {
               matrix: [[1, 1, 1]],
-              bounds: [{ upper: 10 }],
+              sense: ["<="],
+              rhs: [10],
             },
           },
         },
@@ -620,7 +616,8 @@ describe("HiGHS MCP Server", () => {
             },
             constraints: {
               matrix: [[1, 1, 1]],
-              bounds: [{ upper: 10 }],
+              sense: ["<="],
+              rhs: [10],
             },
           },
         },
@@ -646,7 +643,8 @@ describe("HiGHS MCP Server", () => {
             },
             constraints: {
               matrix: [[1, 1, 1, 1]],
-              bounds: [{ upper: 10 }],
+              sense: ["<="],
+              rhs: [10],
             },
           },
         },
@@ -676,7 +674,8 @@ describe("HiGHS MCP Server", () => {
                 [1, 1], // Wrong: 2 instead of 3
                 [1, 1, 1, 1], // Wrong: 4 instead of 3
               ],
-              bounds: [{ upper: 10 }], // Wrong: 1 instead of 2
+              sense: ["<="], // Wrong: 1 instead of 2
+              rhs: [10], // Wrong: 1 instead of 2
             },
           },
         },
@@ -692,7 +691,7 @@ describe("HiGHS MCP Server", () => {
         "Constraint row 1 has 4 coefficients but expected 3",
       );
       expect(response.error.message).toContain(
-        "Constraint bounds array has 1 elements but expected 2",
+        "Constraint sense array has 1 elements but expected 2",
       );
       expect(response.error.message).toContain(
         "Variable bounds array has 2 elements but expected 3",
@@ -718,7 +717,8 @@ describe("HiGHS MCP Server", () => {
             },
             constraints: {
               matrix: [[1, 1]],
-              bounds: [{ upper: 10 }],
+              sense: ["<="],
+              rhs: [10],
             },
           },
         },
@@ -738,7 +738,8 @@ describe("HiGHS MCP Server", () => {
             variables: { bounds: [{ lower: 0 }, { lower: 0 }] },
             constraints: {
               matrix: [[1, 1]],
-              bounds: [{ upper: 10 }],
+              sense: ["<="],
+              rhs: [10],
             },
           },
           options: {

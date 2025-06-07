@@ -4,10 +4,9 @@ export const VariableBoundSchema = z.object({
   upper: z.number().nullable().optional().describe("Upper bound for the variable"),
 });
 
-export const ConstraintBoundSchema = z.object({
-  lower: z.number().nullable().optional().describe("Lower bound for the constraint"),
-  upper: z.number().nullable().optional().describe("Upper bound for the constraint"),
-});
+export const ConstraintSenseSchema = z
+  .enum(["<=", ">=", "="])
+  .describe("Constraint sense (direction)");
 
 export const VariableTypeSchema = z
   .enum(["continuous", "integer", "binary"])
@@ -29,10 +28,15 @@ export const ConstraintsSchema = z.object({
     .describe(
       "Constraint coefficient matrix (A in Ax ≤/=/≥ b). Each row represents one constraint and must have exactly as many coefficients as there are variables in the objective function. Dimension mismatch will cause validation errors.",
     ),
-  bounds: z
-    .array(ConstraintBoundSchema)
+  sense: z
+    .array(ConstraintSenseSchema)
     .describe(
-      "Bounds for each constraint row. The array length must equal the number of rows in the constraint matrix. Use null for unbounded constraints.",
+      "Constraint sense array. Each element specifies the constraint direction: '<=', '>=', or '='.",
+    ),
+  rhs: z
+    .array(z.number())
+    .describe(
+      "Right-hand side values for constraints. The array length must equal the number of constraint rows.",
     ),
 });
 
@@ -87,12 +91,20 @@ export const ProblemSchema = z
       }
     });
 
-    // Check that bounds arrays have correct length
-    if (data.constraints.bounds.length !== numConstraints) {
+    // Check that sense and rhs arrays have correct length
+    if (data.constraints.sense.length !== numConstraints) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Constraint bounds array has ${data.constraints.bounds.length} elements but expected ${numConstraints} (matching the number of constraint rows)`,
-        path: ["constraints", "bounds"],
+        message: `Constraint sense array has ${data.constraints.sense.length} elements but expected ${numConstraints} (matching the number of constraint rows)`,
+        path: ["constraints", "sense"],
+      });
+    }
+
+    if (data.constraints.rhs.length !== numConstraints) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Constraint rhs array has ${data.constraints.rhs.length} elements but expected ${numConstraints} (matching the number of constraint rows)`,
+        path: ["constraints", "rhs"],
       });
     }
 

@@ -34,7 +34,8 @@ export function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): strin
   lpString += "Subject To\n";
   for (let i = 0; i < numConstraints; i++) {
     const row = constraints.matrix[i];
-    const bound = constraints.bounds[i];
+    const sense = constraints.sense[i];
+    const rhs = constraints.rhs[i];
 
     const terms = [];
     for (let j = 0; j < numVars; j++) {
@@ -54,24 +55,7 @@ export function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): strin
     }
 
     const constraintExpr = terms.join(" + ").replace(/\+ -/g, "-");
-
-    // Handle missing upper/lower properties in constraint bounds
-    const lower = bound.lower !== undefined ? bound.lower : null;
-    const upper = bound.upper !== undefined ? bound.upper : null;
-
-    if (lower !== null && upper !== null) {
-      if (lower === upper) {
-        lpString += ` c${i + 1}: ${constraintExpr} = ${upper}\n`;
-      } else {
-        // Split into two constraints for range bounds
-        lpString += ` c${i + 1}_lb: ${constraintExpr} >= ${lower}\n`;
-        lpString += ` c${i + 1}_ub: ${constraintExpr} <= ${upper}\n`;
-      }
-    } else if (lower !== null) {
-      lpString += ` c${i + 1}: ${constraintExpr} >= ${lower}\n`;
-    } else if (upper !== null) {
-      lpString += ` c${i + 1}: ${constraintExpr} <= ${upper}\n`;
-    }
+    lpString += ` c${i + 1}: ${constraintExpr} ${sense} ${rhs}\n`;
   }
 
   // Variable bounds
