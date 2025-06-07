@@ -305,7 +305,7 @@ export const OptionsSchema = z
       .number()
       .optional()
       .describe("Objective target for termination of MIP solver. Default is -inf."),
-    
+
     // Simplex Options
     simplex_strategy: z
       .number()
@@ -313,28 +313,36 @@ export const OptionsSchema = z
       .min(0)
       .max(4)
       .optional()
-      .describe("Strategy for simplex solver. 0=auto, 1=dual serial, 2=dual PAMI, 3=dual SIP, 4=primal. Default is 1."),
+      .describe(
+        "Strategy for simplex solver. 0=auto, 1=dual serial, 2=dual PAMI, 3=dual SIP, 4=primal. Default is 1.",
+      ),
     simplex_scale_strategy: z
       .number()
       .int()
       .min(0)
       .max(5)
       .optional()
-      .describe("Scaling strategy. 0=none, 1=auto, 2=equilibration, 3=forced equilibration, 4=max value 0, 5=max value 1. Default is 1."),
+      .describe(
+        "Scaling strategy. 0=none, 1=auto, 2=equilibration, 3=forced equilibration, 4=max value 0, 5=max value 1. Default is 1.",
+      ),
     simplex_dual_edge_weight_strategy: z
       .number()
       .int()
       .min(-1)
       .max(2)
       .optional()
-      .describe("Dual edge weight strategy. -1=auto, 0=Dantzig, 1=Devex, 2=steepest edge. Default is -1."),
+      .describe(
+        "Dual edge weight strategy. -1=auto, 0=Dantzig, 1=Devex, 2=steepest edge. Default is -1.",
+      ),
     simplex_primal_edge_weight_strategy: z
       .number()
       .int()
       .min(-1)
       .max(2)
       .optional()
-      .describe("Primal edge weight strategy. -1=auto, 0=Dantzig, 1=Devex, 2=steepest edge. Default is -1."),
+      .describe(
+        "Primal edge weight strategy. -1=auto, 0=Dantzig, 1=Devex, 2=steepest edge. Default is -1.",
+      ),
     simplex_iteration_limit: z
       .number()
       .int()
@@ -357,10 +365,7 @@ export const OptionsSchema = z
       .boolean()
       .optional()
       .describe("Enables or disables console logging. Default is true."),
-    log_file: z
-      .string()
-      .optional()
-      .describe("Path to log file for solver output."),
+    log_file: z.string().optional().describe("Path to log file for solver output."),
     highs_debug_level: z
       .number()
       .int()
@@ -438,17 +443,16 @@ export const OptionsSchema = z
       .boolean()
       .optional()
       .describe("Whether to write the solution to a file. Default is false."),
-    solution_file: z
-      .string()
-      .optional()
-      .describe("Path where the solution will be written."),
+    solution_file: z.string().optional().describe("Path where the solution will be written."),
     write_solution_style: z
       .number()
       .int()
       .min(-1)
       .max(4)
       .optional()
-      .describe("Style of solution file. 0=HiGHS raw, 1=HiGHS pretty, 2=Glpsol raw, 3=Glpsol pretty, 4=HiGHS sparse. Default is 0."),
+      .describe(
+        "Style of solution file. 0=HiGHS raw, 1=HiGHS pretty, 2=Glpsol raw, 3=Glpsol pretty, 4=HiGHS sparse. Default is 0.",
+      ),
   })
   .optional()
   .describe(

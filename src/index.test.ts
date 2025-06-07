@@ -600,10 +600,7 @@ describe("HiGHS MCP Server", () => {
             objective: {
               linear: [5, 3],
             },
-            variables: [
-              { type: "int" },
-              { type: "int" },
-            ],
+            variables: [{ type: "int" }, { type: "int" }],
             constraints: {
               dense: [[2, 1]],
               sense: ["<="],
@@ -684,10 +681,10 @@ describe("HiGHS MCP Server", () => {
             time_limit: 30,
             presolve: "on",
             solver: "simplex",
-            
+
             // Algorithm tuning
             simplex_dual_edge_weight_strategy: 1,
-            
+
             // Include output_flag set to true (its default)
             output_flag: true,
           },
