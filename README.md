@@ -102,7 +102,17 @@ The server provides a single tool: `optimize-mip-lp-tool`
       names?: string[]
     },
     constraints: {
-      matrix: number[][],  // Coefficient matrix (A in Ax ≤/=/≥ b) - at least one constraint required
+      // Dense format (for small problems):
+      dense?: number[][],  // 2D array where each row is a constraint
+      
+      // OR Sparse format (for large problems with many zeros):
+      sparse?: {
+        rows: number[],    // Row indices of non-zero coefficients (0-indexed)
+        cols: number[],    // Column indices of non-zero coefficients (0-indexed)
+        values: number[],  // Non-zero coefficient values
+        shape: [number, number]  // [num_constraints, num_variables]
+      },
+      
       sense: Array<'<=' | '>=' | '='>,  // Constraint directions
       rhs: number[]  // Right-hand side values
     }
@@ -147,7 +157,7 @@ Optimize production schedules to maximize profit while respecting resource const
       ]
     },
     constraints: {
-      matrix: [
+      dense: [
         [2, 3],  // Machine hours per unit
         [1, 2]   // Labor hours per unit
       ],
@@ -174,8 +184,8 @@ Minimize transportation costs across a supply chain network:
       bounds: Array(8).fill({ lower: 0 })
     },
     constraints: {
-      // Supply, flow conservation, and demand constraints
-      matrix: [
+      // Supply, flow conservation, and demand constraints (dense format)
+      dense: [
         [1, 1, 0, 0, 0, 0, 0, 0],
         [0, 0, 1, 1, 0, 0, 0, 0],
         [1, 0, 1, 0, -1, -1, 0, 0],
@@ -211,7 +221,7 @@ Optimize investment allocation with risk constraints:
       ]
     },
     constraints: {
-      matrix: [
+      dense: [
         [1, 1, 1, 1],           // Total allocation = 100%
         [0.02, 0.15, 0.08, 0.20]  // Risk constraint
       ],
@@ -238,7 +248,7 @@ Optimize resource allocation across projects with integer constraints:
       names: ['ProjectA', 'ProjectB', 'ProjectC']
     },
     constraints: {
-      matrix: [
+      dense: [
         [5, 8, 3],   // Resource requirements
         [2, 3, 1]    // Time requirements
       ],
@@ -249,9 +259,47 @@ Optimize resource allocation across projects with integer constraints:
 }
 ```
 
+### 5. Large Sparse Problems
+
+For large optimization problems with mostly zero coefficients, use the sparse format for better memory efficiency:
+
+```javascript
+{
+  problem: {
+    sense: 'minimize',
+    objective: {
+      linear: [1, 2, 3, 4]  // Minimize x1 + 2x2 + 3x3 + 4x4
+    },
+    variables: {
+      bounds: [
+        { lower: 0 }, { lower: 0 }, { lower: 0 }, { lower: 0 }
+      ]
+    },
+    constraints: {
+      // Sparse format: only specify non-zero coefficients
+      sparse: {
+        rows: [0, 0, 1, 1],    // Row indices
+        cols: [0, 2, 1, 3],    // Column indices  
+        values: [1, 1, 1, 1],  // Non-zero values
+        shape: [2, 4]          // 2 constraints, 4 variables
+      },
+      // Represents: x1 + x3 >= 2, x2 + x4 >= 3
+      sense: ['>=', '>='],
+      rhs: [2, 3]
+    }
+  }
+}
+```
+
+Use sparse format when:
+- Problem has > 1000 variables or constraints
+- Matrix has < 10% non-zero coefficients
+- Memory efficiency is important
+
 ## Features
 
 - **High Performance**: Built on the HiGHS solver, one of the fastest open-source optimization solvers
+- **Sparse Matrix Support**: Efficient handling of large-scale problems with sparse constraint matrices
 - **Type Safety**: Full TypeScript support with Zod validation for robust error handling
 - **Flexible Problem Types**: Supports continuous, integer, and binary variables
 - **Multiple Solver Methods**: Choose between simplex, interior point, and other algorithms

@@ -21,12 +21,27 @@ export const ObjectiveSchema = z.object({
     ),
 });
 
-export const ConstraintsSchema = z.object({
-  matrix: z
+// Sparse matrix schema
+export const SparseMatrixSchema = z.object({
+  rows: z
+    .array(z.number().int().nonnegative())
+    .describe("Row indices of non-zero coefficients (0-indexed)"),
+  cols: z
+    .array(z.number().int().nonnegative())
+    .describe("Column indices of non-zero coefficients (0-indexed)"),
+  values: z.array(z.number()).describe("Non-zero coefficient values"),
+  shape: z
+    .tuple([z.number().int().positive(), z.number().int().positive()])
+    .describe("[num_constraints, num_variables] dimensions of the full matrix"),
+});
+
+// Dense constraints schema
+export const DenseConstraintsSchema = z.object({
+  dense: z
     .array(z.array(z.number()))
     .min(1, "At least one constraint is required")
     .describe(
-      "Constraint coefficient matrix (A in Ax ≤/=/≥ b). Each row represents one constraint and must have exactly as many coefficients as there are variables in the objective function. Dimension mismatch will cause validation errors.",
+      "Dense constraint coefficient matrix (A in Ax ≤/=/≥ b). Each row represents one constraint and must have exactly as many coefficients as there are variables in the objective function.",
     ),
   sense: z
     .array(ConstraintSenseSchema)
@@ -39,6 +54,44 @@ export const ConstraintsSchema = z.object({
       "Right-hand side values for constraints. The array length must equal the number of constraint rows.",
     ),
 });
+
+// Sparse constraints schema
+export const SparseConstraintsSchema = z.object({
+  sparse: SparseMatrixSchema.describe(
+    "Sparse matrix in COO (Coordinate) format - only specify non-zero values with their positions",
+  ),
+  sense: z
+    .array(ConstraintSenseSchema)
+    .describe(
+      "Constraint sense array. Length must equal the number of constraints (first element of shape).",
+    ),
+  rhs: z
+    .array(z.number())
+    .describe(
+      "Right-hand side values. Length must equal the number of constraints (first element of shape).",
+    ),
+});
+
+// Union of dense and sparse formats
+export const ConstraintsSchema = z
+  .union([DenseConstraintsSchema, SparseConstraintsSchema])
+  .describe(
+    `Constraints can be specified in two formats:
+
+1. DENSE FORMAT (for small problems):
+   - dense: 2D array where each row is a constraint
+   - Example: { "dense": [[1, 2, 0], [0, 1, 3]], "sense": ["<=", "<="], "rhs": [10, 15] }
+
+2. SPARSE FORMAT (for large problems with many zeros):
+   - sparse: Only specify non-zero coefficients using:
+     - rows: which constraint (0-indexed)
+     - cols: which variable (0-indexed)  
+     - values: the coefficient value
+     - shape: [num_constraints, num_variables]
+   - Example: { "sparse": { "rows": [0, 0, 1, 1], "cols": [0, 1, 1, 2], "values": [1, 2, 1, 3], "shape": [2, 3] }, "sense": ["<=", "<="], "rhs": [10, 15] }
+   
+Use SPARSE format when: problem has > 1000 variables/constraints or < 10% non-zero coefficients.`,
+  );
 
 export const VariablesSchema = z.object({
   bounds: z
@@ -68,9 +121,7 @@ export const ProblemSchema = z
     objective: ObjectiveSchema.describe(
       "Objective function coefficients. At least one coefficient is required.",
     ),
-    constraints: ConstraintsSchema.describe(
-      "Constraint specifications. At least one constraint is required. Common errors: dimension mismatch between constraint matrix and objective coefficients.",
-    ),
+    constraints: ConstraintsSchema,
     variables: VariablesSchema.describe(
       "Variable specifications including bounds, types, and names. All arrays must have length matching the objective function.",
     ),
@@ -78,24 +129,80 @@ export const ProblemSchema = z
   .superRefine((data, ctx) => {
     // Ensure matrix dimensions are consistent
     const numVars = data.objective.linear.length;
-    const numConstraints = data.constraints.matrix.length;
+    let numConstraints: number;
 
-    // Check that all constraint rows have the same number of variables
-    data.constraints.matrix.forEach((row, index) => {
-      if (row.length !== numVars) {
+    // Handle both dense and sparse formats
+    if ("dense" in data.constraints) {
+      // Dense format validation
+      numConstraints = data.constraints.dense.length;
+
+      // Check that all constraint rows have the same number of variables
+      data.constraints.dense.forEach((row, index) => {
+        if (row.length !== numVars) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Constraint row ${index} has ${row.length} coefficients but expected ${numVars} (matching the number of variables in the objective function)`,
+            path: ["constraints", "dense", index],
+          });
+        }
+      });
+    } else if ("sparse" in data.constraints) {
+      // Sparse format validation
+      const sparse = data.constraints.sparse;
+      [numConstraints] = sparse.shape;
+      const matrixVars = sparse.shape[1];
+
+      // Check shape matches problem size
+      if (matrixVars !== numVars) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Constraint row ${index} has ${row.length} coefficients but expected ${numVars} (matching the number of variables in the objective function)`,
-          path: ["constraints", "matrix", index],
+          message: `Sparse matrix shape [${numConstraints}, ${matrixVars}] doesn't match number of variables (${numVars})`,
+          path: ["constraints", "sparse", "shape"],
         });
       }
-    });
+
+      // Check arrays have same length
+      if (
+        sparse.rows.length !== sparse.values.length ||
+        sparse.cols.length !== sparse.values.length
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Sparse matrix arrays (rows, cols, values) must have equal length",
+          path: ["constraints", "sparse"],
+        });
+      }
+
+      // Check indices are within bounds
+      sparse.rows.forEach((row, i) => {
+        if (row >= numConstraints) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Row index ${row} exceeds number of constraints (${numConstraints})`,
+            path: ["constraints", "sparse", "rows", i],
+          });
+        }
+      });
+
+      sparse.cols.forEach((col, i) => {
+        if (col >= numVars) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Column index ${col} exceeds number of variables (${numVars})`,
+            path: ["constraints", "sparse", "cols", i],
+          });
+        }
+      });
+    } else {
+      // This should never happen due to union type, but TypeScript doesn't know that
+      numConstraints = 0;
+    }
 
     // Check that sense and rhs arrays have correct length
     if (data.constraints.sense.length !== numConstraints) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Constraint sense array has ${data.constraints.sense.length} elements but expected ${numConstraints} (matching the number of constraint rows)`,
+        message: `Constraint sense array has ${data.constraints.sense.length} elements but expected ${numConstraints} (matching the number of constraints)`,
         path: ["constraints", "sense"],
       });
     }
@@ -103,7 +210,7 @@ export const ProblemSchema = z
     if (data.constraints.rhs.length !== numConstraints) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Constraint rhs array has ${data.constraints.rhs.length} elements but expected ${numConstraints} (matching the number of constraint rows)`,
+        message: `Constraint rhs array has ${data.constraints.rhs.length} elements but expected ${numConstraints} (matching the number of constraints)`,
         path: ["constraints", "rhs"],
       });
     }
@@ -159,12 +266,18 @@ export const OptionsSchema = z
 export const OptimizationArgsSchema = z.object({
   problem: ProblemSchema.describe(`The optimization problem specification. 
     
+    CONSTRAINT MATRIX FORMATS:
+    - DENSE: Use 'dense' property with 2D array for small problems or dense matrices
+    - SPARSE: Use 'sparse' property with COO format for large/sparse problems
+    
     DIMENSION CONSISTENCY REQUIREMENTS:
-    - All constraint rows must have the same number of coefficients as variables in the objective
-    - constraints.bounds length must equal the number of constraints (matrix rows)
-    - variables.bounds length must equal the number of variables (objective coefficients)
-    - variables.types length (if provided) must equal the number of variables
-    - variables.names length (if provided) must equal the number of variables
+    - All constraint rows (dense) must have same number of coefficients as variables in objective
+    - For sparse format: shape[1] must equal number of variables in objective
+    - constraints.sense length must equal number of constraints
+    - constraints.rhs length must equal number of constraints
+    - variables.bounds length must equal number of variables (objective coefficients)
+    - variables.types length (if provided) must equal number of variables
+    - variables.names length (if provided) must equal number of variables
     
     POSSIBLE SOLVER STATUSES:
     - 'Optimal': Solution found successfully
