@@ -1,5 +1,5 @@
 ---
-"highs-mcp": patch
+default: patch
 ---
 
 Improve schema documentation to help prevent invalid data errors
