@@ -19,11 +19,7 @@ describe("encode", () => {
           sense: ["<=", ">="],
           rhs: [10, 20],
         },
-        variables: [
-          { name: "x" },
-          { name: "y" },
-          { name: "z" },
-        ],
+        variables: [{ name: "x" }, { name: "y" }, { name: "z" }],
       };
 
       const result = encode(problem);
@@ -218,11 +214,7 @@ describe("encode", () => {
           sense: ["<="],
           rhs: [10],
         },
-        variables: [
-          { type: "int" },
-          { type: "bin" },
-          { type: "int" },
-        ],
+        variables: [{ type: "int" }, { type: "bin" }, { type: "int" }],
       };
 
       const result = encode(problem);

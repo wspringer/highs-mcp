@@ -1,39 +1,6 @@
 import { z } from "zod";
+import type { HighsSolution } from "highs";
 import { ProblemSchema } from "./schemas.js";
-
-/**
- * Represents a column (variable) in the HiGHS solver result.
- * Contains the primal (solution) and dual values for the variable.
- */
-interface HighsColumn {
-  /** The primal value (solution value) of the variable */
-  Primal?: number;
-  /** The dual value (reduced cost) of the variable */
-  Dual?: number;
-}
-
-/**
- * Represents a row (constraint) in the HiGHS solver result.
- * Contains the dual value for the constraint.
- */
-interface HighsRow {
-  /** The dual value (shadow price) of the constraint */
-  Dual?: number;
-}
-
-/**
- * The raw result object returned by the HiGHS solver.
- */
-interface HighsResult {
-  /** The solver status (e.g., "Optimal", "Infeasible", "Unbounded") */
-  Status: string;
-  /** The objective function value at the current solution */
-  ObjectiveValue: number;
-  /** Map of variable names to their column data */
-  Columns: Record<string, HighsColumn>;
-  /** Array of constraint row data */
-  Rows: HighsRow[];
-}
 
 /**
  * Result structure for problems that reached optimal solution.
@@ -73,30 +40,30 @@ export type DecodedResult = OptimalResult | NonOptimalResult;
 
 /**
  * Decodes the raw HiGHS solver result into a structured format.
- * 
+ *
  * This function extracts solution values, dual values, and status information
  * from the HiGHS result object and organizes them into a consistent structure
  * that can be easily consumed by API clients.
- * 
+ *
  * For optimal solutions, it provides:
  * - Solution values for each variable
  * - Dual values (shadow prices) for each constraint
  * - Dual values (reduced costs) for each variable
- * 
+ *
  * For non-optimal solutions, it provides:
  * - Normalized status string
  * - Human-readable message
  * - Objective value (if available)
- * 
+ *
  * @param result - The raw result object from HiGHS solver
  * @param problem - The original problem definition (needed to map variable names)
  * @returns A decoded result object with consistent structure
- * 
+ *
  * @example
  * ```typescript
  * const result = highs.solve(lpString, options);
  * const decoded = decode(result, problem);
- * 
+ *
  * if (decoded.status === "optimal") {
  *   console.log("Solution:", decoded.solution);
  *   console.log("Objective:", decoded.objective_value);
@@ -106,8 +73,8 @@ export type DecodedResult = OptimalResult | NonOptimalResult;
  * ```
  */
 export function decode(
-  result: HighsResult,
-  problem: z.infer<typeof ProblemSchema>
+  result: HighsSolution,
+  problem: z.infer<typeof ProblemSchema>,
 ): DecodedResult {
   if (result.Status === "Optimal") {
     // Extract solution values and dual values for each variable
@@ -119,11 +86,12 @@ export function decode(
       // Use custom name if provided, otherwise default to x1, x2, etc.
       const varName = problem.variables[i].name || `x${i + 1}`;
       const column = result.Columns[varName];
-      
+
       if (column) {
         // Extract primal (solution) and dual (reduced cost) values
         solutionValues.push(column.Primal || 0);
-        dualValues.push(column.Dual || 0);
+        // Dual may not exist on all column types
+        dualValues.push("Dual" in column ? column.Dual || 0 : 0);
       } else {
         // Variable not found in result - default to 0
         solutionValues.push(0);
@@ -132,7 +100,7 @@ export function decode(
     }
 
     // Extract dual values (shadow prices) for constraints
-    const constraintDuals = result.Rows.map((row) => row.Dual || 0);
+    const constraintDuals = result.Rows.map((row) => ("Dual" in row ? row.Dual || 0 : 0));
 
     return {
       status: "optimal",

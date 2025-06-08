@@ -3,23 +3,22 @@ import { ProblemSchema } from "./schemas.js";
 
 /**
  * Encodes an optimization problem into CPLEX LP format that can be parsed by HiGHS.
- * 
+ *
  * The LP format consists of several sections:
  * - Objective: The function to minimize or maximize
  * - Subject To: The constraints
  * - Bounds: Variable bounds (if not default)
  * - General: Integer variables
  * - Binary: Binary variables
- * 
+ *
  * @param problem - The optimization problem definition
  * @returns The problem encoded in CPLEX LP format
  */
 export function encode(problem: z.infer<typeof ProblemSchema>): string {
   const { sense, objective, constraints, variables } = problem;
-  const numVars = objective.linear.length;
 
   // Convert constraints to dense format for easier processing
-  const { constraintMatrix, numConstraints } = convertConstraintsToDense(constraints);
+  const { constraintMatrix } = convertConstraintsToDense(constraints);
 
   let lpString = "";
 
@@ -43,7 +42,7 @@ export function encode(problem: z.infer<typeof ProblemSchema>): string {
 /**
  * Converts constraints from either dense or sparse format to dense format.
  * Sparse format is converted by expanding the COO representation into a full matrix.
- * 
+ *
  * @param constraints - The constraints in either dense or sparse format
  * @returns The constraint matrix in dense format and the number of constraints
  */
@@ -55,7 +54,7 @@ function convertConstraintsToDense(constraints: z.infer<typeof ProblemSchema>["c
     // Already in dense format
     return {
       constraintMatrix: constraints.dense,
-      numConstraints: constraints.dense.length
+      numConstraints: constraints.dense.length,
     };
   } else if ("sparse" in constraints) {
     // Convert sparse to dense format
@@ -81,7 +80,7 @@ function convertConstraintsToDense(constraints: z.infer<typeof ProblemSchema>["c
 /**
  * Formats a coefficient for display in LP format.
  * Handles special cases like coefficients of 1, -1, and proper sign formatting.
- * 
+ *
  * @param coeff - The coefficient value
  * @param varName - The variable name
  * @param isFirst - Whether this is the first term (affects sign handling)
@@ -89,7 +88,7 @@ function convertConstraintsToDense(constraints: z.infer<typeof ProblemSchema>["c
  */
 function formatCoefficient(coeff: number, varName: string, isFirst: boolean = false): string {
   if (coeff === 0) return "";
-  
+
   if (coeff === 1) {
     return isFirst ? varName : `+ ${varName}`;
   } else if (coeff === -1) {
@@ -103,7 +102,7 @@ function formatCoefficient(coeff: number, varName: string, isFirst: boolean = fa
 
 /**
  * Formats the objective function section of the LP file.
- * 
+ *
  * @param sense - Whether to minimize or maximize
  * @param objective - The objective function coefficients
  * @param variables - Variable definitions (for names)
@@ -112,7 +111,7 @@ function formatCoefficient(coeff: number, varName: string, isFirst: boolean = fa
 function formatObjective(
   sense: "minimize" | "maximize",
   objective: z.infer<typeof ProblemSchema>["objective"],
-  variables: z.infer<typeof ProblemSchema>["variables"]
+  variables: z.infer<typeof ProblemSchema>["variables"],
 ): string {
   let result = sense === "minimize" ? "Minimize\n" : "Maximize\n";
   result += " obj: ";
@@ -136,7 +135,7 @@ function formatObjective(
 
 /**
  * Formats the constraints section of the LP file.
- * 
+ *
  * @param constraintMatrix - The constraint coefficients in dense format
  * @param constraints - Constraint metadata (sense, rhs)
  * @param variables - Variable definitions (for names)
@@ -145,7 +144,7 @@ function formatObjective(
 function formatConstraints(
   constraintMatrix: number[][],
   constraints: z.infer<typeof ProblemSchema>["constraints"],
-  variables: z.infer<typeof ProblemSchema>["variables"]
+  variables: z.infer<typeof ProblemSchema>["variables"],
 ): string {
   let result = "Subject To\n";
 
@@ -177,13 +176,11 @@ function formatConstraints(
 /**
  * Formats the bounds section of the LP file.
  * Applies smart defaults based on variable type.
- * 
+ *
  * @param variables - Variable definitions including bounds and types
  * @returns The formatted bounds section string
  */
-function formatBounds(
-  variables: z.infer<typeof ProblemSchema>["variables"]
-): string {
+function formatBounds(variables: z.infer<typeof ProblemSchema>["variables"]): string {
   let result = "Bounds\n";
 
   for (let i = 0; i < variables.length; i++) {
@@ -219,13 +216,11 @@ function formatBounds(
 /**
  * Formats the variable types section of the LP file.
  * Groups variables by type (integer or binary) and creates appropriate sections.
- * 
+ *
  * @param variables - Variable definitions including types
  * @returns The formatted variable types sections string
  */
-function formatVariableTypes(
-  variables: z.infer<typeof ProblemSchema>["variables"]
-): string {
+function formatVariableTypes(variables: z.infer<typeof ProblemSchema>["variables"]): string {
   const integerVars: string[] = [];
   const binaryVars: string[] = [];
 

@@ -1,20 +1,33 @@
 import { describe, it, expect } from "vitest";
 import { decode, type DecodedResult } from "./decode.js";
+import type { HighsSolution } from "highs";
 import type { z } from "zod";
 import type { ProblemSchema } from "./schemas.js";
 
 // Type guard functions
-function isOptimalResult(result: DecodedResult): result is Extract<DecodedResult, { status: "optimal" }> {
+function isOptimalResult(
+  result: DecodedResult,
+): result is Extract<DecodedResult, { status: "optimal" }> {
   return result.status === "optimal";
 }
 
-function isNonOptimalResult(result: DecodedResult): result is Extract<DecodedResult, { message: string }> {
+function isNonOptimalResult(
+  result: DecodedResult,
+): result is Extract<DecodedResult, { message: string }> {
   return result.status !== "optimal";
+}
+
+// Helper to create mock HighsSolution objects
+function createMockHighsSolution(mockData: Record<string, unknown>): HighsSolution {
+  return mockData as HighsSolution;
 }
 
 describe("decode", () => {
   // Helper function to create a test problem
-  const createTestProblem = (numVars: number, varNames?: string[]): z.infer<typeof ProblemSchema> => ({
+  const createTestProblem = (
+    numVars: number,
+    varNames?: string[],
+  ): z.infer<typeof ProblemSchema> => ({
     sense: "minimize",
     objective: {
       linear: Array(numVars).fill(1),
@@ -24,15 +37,17 @@ describe("decode", () => {
       sense: ["<="],
       rhs: [10],
     },
-    variables: Array(numVars).fill(null).map((_, i) => ({
-      name: varNames?.[i] || undefined,
-    })),
+    variables: Array(numVars)
+      .fill(null)
+      .map((_, i) => ({
+        name: varNames?.[i] || undefined,
+      })),
   });
 
   describe("optimal results", () => {
     it("should decode optimal solution with all values present", () => {
       const problem = createTestProblem(3, ["x", "y", "z"]);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Optimal",
         ObjectiveValue: 6.5,
         Columns: {
@@ -40,10 +55,8 @@ describe("decode", () => {
           y: { Primal: 2.0, Dual: 0.0 },
           z: { Primal: 3.0, Dual: -0.1 },
         },
-        Rows: [
-          { Dual: 0.5 },
-        ],
-      };
+        Rows: [{ Dual: 0.5 }],
+      });
 
       const result = decode(highsResult, problem);
 
@@ -58,17 +71,15 @@ describe("decode", () => {
 
     it("should handle missing dual values", () => {
       const problem = createTestProblem(2, ["a", "b"]);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Optimal",
         ObjectiveValue: 10,
         Columns: {
           a: { Primal: 5 },
           b: { Primal: 5, Dual: 0.3 },
         },
-        Rows: [
-          {},
-        ],
-      };
+        Rows: [{}],
+      });
 
       const result = decode(highsResult, problem);
 
@@ -83,7 +94,7 @@ describe("decode", () => {
 
     it("should use default variable names when not provided", () => {
       const problem = createTestProblem(3);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Optimal",
         ObjectiveValue: 15,
         Columns: {
@@ -91,10 +102,8 @@ describe("decode", () => {
           x2: { Primal: 4, Dual: 0.2 },
           x3: { Primal: 8, Dual: 0.3 },
         },
-        Rows: [
-          { Dual: 1.5 },
-        ],
-      };
+        Rows: [{ Dual: 1.5 }],
+      });
 
       const result = decode(highsResult, problem);
 
@@ -109,7 +118,7 @@ describe("decode", () => {
 
     it("should handle missing columns in result", () => {
       const problem = createTestProblem(3, ["x", "y", "z"]);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Optimal",
         ObjectiveValue: 5,
         Columns: {
@@ -117,10 +126,8 @@ describe("decode", () => {
           // y is missing - should default to 0
           z: { Primal: 0, Dual: 0 },
         },
-        Rows: [
-          { Dual: 2.0 },
-        ],
-      };
+        Rows: [{ Dual: 2.0 }],
+      });
 
       const result = decode(highsResult, problem);
 
@@ -151,19 +158,15 @@ describe("decode", () => {
         variables: [{ name: "x" }, { name: "y" }],
       };
 
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Optimal",
         ObjectiveValue: 18,
         Columns: {
           x: { Primal: 2, Dual: 0 },
           y: { Primal: 6, Dual: 0 },
         },
-        Rows: [
-          { Dual: 0 },
-          { Dual: 3 },
-          { Dual: 0 },
-        ],
-      };
+        Rows: [{ Dual: 0 }, { Dual: 3 }, { Dual: 0 }],
+      });
 
       const result = decode(highsResult, problem);
 
@@ -180,12 +183,12 @@ describe("decode", () => {
   describe("non-optimal results", () => {
     it("should decode infeasible status", () => {
       const problem = createTestProblem(2);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Infeasible",
         ObjectiveValue: 0,
         Columns: {},
         Rows: [],
-      };
+      });
 
       const result = decode(highsResult, problem);
 
@@ -198,12 +201,12 @@ describe("decode", () => {
 
     it("should decode unbounded status", () => {
       const problem = createTestProblem(1);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Unbounded",
         ObjectiveValue: -Infinity,
         Columns: {},
         Rows: [],
-      };
+      });
 
       const result = decode(highsResult, problem);
 
@@ -216,12 +219,12 @@ describe("decode", () => {
 
     it("should normalize status strings with spaces", () => {
       const problem = createTestProblem(1);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Time Limit Reached",
         ObjectiveValue: 42,
         Columns: {},
         Rows: [],
-      };
+      });
 
       const result = decode(highsResult, problem);
 
@@ -234,12 +237,12 @@ describe("decode", () => {
 
     it("should handle unknown status", () => {
       const problem = createTestProblem(1);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Unknown Error",
         ObjectiveValue: NaN,
         Columns: {},
         Rows: [],
-      };
+      });
 
       const result = decode(highsResult, problem);
 
@@ -254,14 +257,14 @@ describe("decode", () => {
   describe("type safety", () => {
     it("should allow type narrowing for optimal results", () => {
       const problem = createTestProblem(1);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Optimal",
         ObjectiveValue: 5,
         Columns: {
           x1: { Primal: 5, Dual: 0 },
         },
         Rows: [{ Dual: 1 }],
-      };
+      });
 
       const result = decode(highsResult, problem);
 
@@ -276,12 +279,12 @@ describe("decode", () => {
 
     it("should allow type narrowing for non-optimal results", () => {
       const problem = createTestProblem(1);
-      const highsResult = {
+      const highsResult = createMockHighsSolution({
         Status: "Infeasible",
         ObjectiveValue: 0,
         Columns: {},
         Rows: [],
-      };
+      });
 
       const result = decode(highsResult, problem);
 
@@ -290,9 +293,9 @@ describe("decode", () => {
         // TypeScript now knows this is a NonOptimalResult
         expect(result.message).toBe("Problem status: Infeasible");
         // Verify solution properties don't exist
-        expect('solution' in result).toBe(false);
-        expect('dual_solution' in result).toBe(false);
-        expect('variable_duals' in result).toBe(false);
+        expect("solution" in result).toBe(false);
+        expect("dual_solution" in result).toBe(false);
+        expect("variable_duals" in result).toBe(false);
       }
     });
   });

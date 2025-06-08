@@ -3,6 +3,10 @@ import { spawn, ChildProcess } from "child_process";
 import { once } from "events";
 import packageJson from "../package.json";
 
+// Use any for test responses to avoid complex typing
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TestResponse = any;
+
 describe("Node.js Version Check", () => {
   it("should start successfully with Node.js >= 16", async () => {
     // Start the server and check that it starts without error
@@ -76,7 +80,10 @@ describe("HiGHS MCP Server", () => {
     }
   });
 
-  async function sendRequest(method: string, params: any = {}): Promise<any> {
+  async function sendRequest(
+    method: string,
+    params: Record<string, unknown> = {},
+  ): Promise<TestResponse> {
     return new Promise((resolve, reject) => {
       const request = {
         jsonrpc: "2.0",
@@ -216,10 +223,7 @@ describe("HiGHS MCP Server", () => {
             objective: {
               linear: [5, 3],
             },
-            variables: [
-              { type: "int" },
-              { type: "bin" },
-            ],
+            variables: [{ type: "int" }, { type: "bin" }],
             constraints: {
               dense: [[2, 1]],
               sense: ["<="],
@@ -275,12 +279,7 @@ describe("HiGHS MCP Server", () => {
             objective: {
               linear: [12.5, 14.2, 13.8, 11.9], // transportation costs
             },
-            variables: [
-              { name: "S1_W1" },
-              { name: "S1_W2" },
-              { name: "S2_W1" },
-              { name: "S2_W2" },
-            ],
+            variables: [{ name: "S1_W1" }, { name: "S1_W2" }, { name: "S2_W1" }, { name: "S2_W2" }],
             constraints: {
               dense: [
                 [1, 1, 0, 0], // S1 supply constraint
@@ -598,8 +597,12 @@ describe("HiGHS MCP Server", () => {
       expect(response.error.message).toContain("Invalid parameters");
       // Should report multiple errors
       expect(response.error.message).toContain("Variables array has 2 elements but expected 3");
-      expect(response.error.message).toContain("Constraint row 0 has 2 coefficients but expected 3");
-      expect(response.error.message).toContain("Constraint sense array has 1 elements but expected 2");
+      expect(response.error.message).toContain(
+        "Constraint row 0 has 2 coefficients but expected 3",
+      );
+      expect(response.error.message).toContain(
+        "Constraint sense array has 1 elements but expected 2",
+      );
     });
   });
 });

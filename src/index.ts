@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import highsLoader from "highs";
+import highsLoader, { Highs } from "highs";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { OptimizationArgsSchema } from "./schemas.js";
 import { encode } from "./encode.js";
@@ -42,7 +42,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   ],
 }));
 
-let highsInstance: any = null;
+let highsInstance: Highs | null = null;
 
 async function getHighsInstance() {
   if (!highsInstance) {
