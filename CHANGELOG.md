@@ -1,3 +1,9 @@
+## 0.3.1 (2025-06-08)
+
+### Fixes
+
+- Reorganization of the codebase
+
 ## 0.3.0 (2025-06-07)
 
 ### Breaking Changes
