@@ -17,22 +17,9 @@ Follow these steps:
 8. Check if the README is still correct, given the changes. Correct when needed.
 9. Determine if this should be considered a patch, a minor or a major change,
    and ask me for confirmation.
-10. Document the change in a changeset, following knope's convention of having
-    changesets. The change should not cover changes to the codebase itself. It
-    should just cover the _effect_ of the change. Keep the description concise
-    and compact. Feel free to elaborate a bit more in case of significant
-    changes. Don't use `knope document-change` since that doesn't work, calling
-    it from Claude.
-
-Bear in mind that in this project, for a knope changeset the format of the
-frontmatter needs to be something like this:
-
-```
----
-default: major|minor|patch
----
-```
-
-That is to say: use the key `default` instead of the project name.
-
-
+10. Document the change in a changeset, following knope's convention. Check the
+    `CLAUDE.md` file for details. Note that we need the changeset to document
+    the _effect_ of the change. It should be information to _users_ of this
+    project, not to _maintainers_ of this project. For small changes, keep it
+    brief. For major changes, include details on how this change is breaking
+    what we had before.
