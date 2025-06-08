@@ -10,7 +10,7 @@ import {
 import highsLoader from "highs";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { OptimizationArgsSchema } from "./schemas.js";
-import { problemToLPFormat } from "./lp-format.js";
+import { encode } from "./encode.js";
 import packageJson from "../package.json";
 
 const TOOL_NAME = "optimize-mip-lp-tool";
@@ -76,7 +76,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const highs = await getHighsInstance();
 
     // Convert problem to LP format
-    const lpString = problemToLPFormat(problem);
+    const lpString = encode(problem);
 
     // Solve the problem
     const result = highs.solve(lpString, options || {});

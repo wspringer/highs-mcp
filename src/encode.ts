@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ProblemSchema } from "./schemas.js";
 
-export function problemToLPFormat(problem: z.infer<typeof ProblemSchema>): string {
+export function encode(problem: z.infer<typeof ProblemSchema>): string {
   const { sense, objective, constraints, variables } = problem;
   const numVars = objective.linear.length;
 
