@@ -11,6 +11,7 @@ import highsLoader from "highs";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { OptimizationArgsSchema } from "./schemas.js";
 import { encode } from "./encode.js";
+import { decode } from "./decode.js";
 import packageJson from "../package.json";
 
 const TOOL_NAME = "optimize-mip-lp-tool";
@@ -81,62 +82,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Solve the problem
     const result = highs.solve(lpString, options || {});
 
-    if (result.Status === "Optimal") {
-      // Extract solution values
-      const solutionValues = [];
-      const dualValues = [];
+    // Decode the result
+    const decodedResult = decode(result, problem);
 
-      for (let i = 0; i < problem.objective.linear.length; i++) {
-        const varName = problem.variables[i].name || `x${i + 1}`;
-        const column = result.Columns[varName];
-        if (column) {
-          solutionValues.push(column.Primal || 0);
-          dualValues.push(column.Dual || 0);
-        } else {
-          solutionValues.push(0);
-          dualValues.push(0);
-        }
-      }
-
-      // Extract constraint dual values
-      const constraintDuals = result.Rows.map((row: any) => row.Dual || 0);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                status: "optimal",
-                objective_value: result.ObjectiveValue,
-                solution: solutionValues,
-                dual_solution: constraintDuals,
-                variable_duals: dualValues,
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
-    } else {
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                status: result.Status.toLowerCase().replace(/\s+/g, "_"),
-                message: `Problem status: ${result.Status}`,
-                objective_value: result.ObjectiveValue,
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
-    }
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(decodedResult, null, 2),
+        },
+      ],
+    };
   } catch (error) {
     throw new McpError(ErrorCode.InternalError, `Failed to solve optimization problem: ${error}`);
   }
