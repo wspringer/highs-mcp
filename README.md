@@ -12,6 +12,7 @@ This MCP server exposes the HiGHS optimization solver through a standardized int
 
 - Linear Programming (LP) problems
 - Mixed-Integer Programming (MIP) problems
+- Quadratic Programming (QP) problems for convex objectives
 - Binary and integer variable constraints
 - Multi-objective optimization
 
@@ -91,7 +92,19 @@ The server provides a single tool: `optimize-mip-lp-tool`
   problem: {
     sense: 'minimize' | 'maximize',
     objective: {
-      linear: number[]  // Coefficients for each variable
+      linear?: number[],  // Linear coefficients (optional if quadratic is provided)
+      quadratic?: {       // Quadratic terms for convex QP (optional)
+        // Dense format:
+        dense?: number[][]  // Symmetric positive semidefinite matrix Q
+        
+        // OR Sparse format:
+        sparse?: {
+          rows: number[],     // Row indices (0-indexed)
+          cols: number[],     // Column indices (0-indexed)
+          values: number[],   // Values of Q matrix
+          shape: [number, number]  // [num_variables, num_variables]
+        }
+      }
     },
     variables: Array<{
       name?: string,        // Variable name (optional, defaults to x1, x2, etc.)
@@ -173,6 +186,13 @@ The server provides a single tool: `optimize-mip-lp-tool`
   variable_duals: number[]    // Reduced costs for variables
 }
 ```
+
+### Notes on Quadratic Programming (QP)
+
+- **Convex QP only**: The quadratic matrix Q must be positive semidefinite
+- **Continuous variables only**: Integer/binary variables are not supported with quadratic objectives (no MIQP)
+- **Format**: Objective function is: minimize c^T x + 0.5 x^T Q x
+- **Matrix specification**: When specifying Q, values should be doubled to account for the 0.5 factor
 
 ## Use Cases
 
@@ -266,7 +286,42 @@ Optimize investment allocation with risk constraints:
 }
 ```
 
-### 4. Resource Allocation
+### 4. Portfolio Optimization with Risk (Quadratic Programming)
+
+Minimize portfolio risk (variance) while achieving target return:
+
+```javascript
+{
+  problem: {
+    sense: 'minimize',
+    objective: {
+      // Quadratic: minimize portfolio variance (risk)
+      quadratic: {
+        dense: [  // Covariance matrix (×2 for 0.5 factor)
+          [0.2, 0.04, 0.02],
+          [0.04, 0.1, 0.04], 
+          [0.02, 0.04, 0.16]
+        ]
+      }
+    },
+    variables: [
+      { name: 'Stock_A', lb: 0 },
+      { name: 'Stock_B', lb: 0 },
+      { name: 'Stock_C', lb: 0 }
+    ],
+    constraints: {
+      dense: [
+        [1, 1, 1],              // Sum of weights = 1
+        [0.1, 0.12, 0.08]       // Expected return >= target
+      ],
+      sense: ['=', '>='],
+      rhs: [1, 0.1]  // 100% allocation, min 10% return
+    }
+  }
+}
+```
+
+### 5. Resource Allocation
 
 Optimize resource allocation across projects with integer constraints:
 
