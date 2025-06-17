@@ -22,14 +22,81 @@ export const CompactVariableSchema = z.object({
   ),
 });
 
-export const ObjectiveSchema = z.object({
-  linear: z
-    .array(z.number())
-    .min(1, "At least one objective coefficient is required")
-    .describe(
-      "Linear coefficients for each variable. The length of this array defines the number of variables in the problem. All other arrays (constraint matrix rows, variable bounds, types, and names) must match this length.",
-    ),
+// Quadratic objective schemas
+const QuadraticSparseSchema = z.object({
+  format: z.literal("sparse"),
+  rows: z
+    .array(z.number().int().nonnegative())
+    .describe("Row indices of quadratic matrix (0-indexed)"),
+  cols: z
+    .array(z.number().int().nonnegative())
+    .describe("Column indices of quadratic matrix (0-indexed)"),
+  values: z.array(z.number()).describe("Values of quadratic matrix Q"),
+  shape: z
+    .tuple([z.number().int().positive(), z.number().int().positive()])
+    .describe("[num_variables, num_variables] dimensions of Q matrix"),
 });
+
+const QuadraticDenseSchema = z.object({
+  format: z.literal("dense"),
+  matrix: z.array(z.array(z.number())).describe("Dense symmetric matrix Q"),
+});
+
+const QuadraticObjectiveSchema = z
+  .union([QuadraticSparseSchema, QuadraticDenseSchema])
+  .refine((data) => {
+    if (data.format === "sparse") {
+      return (
+        data.shape[0] === data.shape[1] && // Must be square
+        data.rows.length === data.cols.length && // Array lengths match
+        data.rows.length === data.values.length && // Array lengths match
+        data.rows.every((r) => r < data.shape[0]) && // Row indices in bounds
+        data.cols.every((c) => c < data.shape[1])
+      ); // Col indices in bounds
+    } else {
+      const matrix = data.matrix;
+      return (
+        matrix.length > 0 && // Non-empty
+        matrix.length === matrix[0].length && // Square matrix
+        matrix.every((row) => row.length === matrix.length)
+      ); // All rows same length
+    }
+  }, "Quadratic matrix must be square with valid dimensions");
+
+export const ObjectiveSchema = z
+  .object({
+    linear: z
+      .array(z.number())
+      .optional()
+      .describe(
+        "Linear coefficients for each variable (c in: minimize c^T x + 0.5 x^T Q x). If not provided but quadratic is present, defaults to zeros. The length defines the number of variables when quadratic is not present.",
+      ),
+    quadratic: QuadraticObjectiveSchema.optional().describe(
+      "Quadratic terms Q for convex QP (minimize 0.5 x^T Q x + c^T x). Q must be positive semidefinite. Supports both sparse and dense formats.",
+    ),
+  })
+  .refine(
+    (data) => {
+      // At least one of linear or quadratic must be present
+      if (!data.linear && !data.quadratic) {
+        return false;
+      }
+      // If both are present, check dimensions match
+      if (data.linear && data.quadratic) {
+        const numVars = data.linear.length;
+        const qSize =
+          data.quadratic.format === "sparse"
+            ? data.quadratic.shape[0]
+            : data.quadratic.matrix.length;
+        return numVars === qSize;
+      }
+      return true;
+    },
+    {
+      message:
+        "At least one of 'linear' or 'quadratic' must be provided. When both are present, dimensions must match.",
+    },
+  );
 
 // Sparse matrix schema
 export const SparseMatrixSchema = z.object({
@@ -131,8 +198,35 @@ export const ProblemSchema = z
     ),
   })
   .superRefine((data, ctx) => {
-    // Ensure matrix dimensions are consistent
-    const numVars = data.objective.linear.length;
+    // Determine number of variables from objective
+    let numVars: number;
+    if (data.objective.linear) {
+      numVars = data.objective.linear.length;
+    } else if (data.objective.quadratic) {
+      numVars =
+        data.objective.quadratic.format === "sparse"
+          ? data.objective.quadratic.shape[0]
+          : data.objective.quadratic.matrix.length;
+    } else {
+      // This should be caught by ObjectiveSchema refinement, but just in case
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Cannot determine number of variables from objective",
+        path: ["objective"],
+      });
+      return;
+    }
+
+    // Check for QP with integer variables
+    if (data.objective.quadratic && data.variables.some((v) => v.type && v.type !== "cont")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Quadratic objectives are not supported with integer or binary variables (MIQP not supported by HiGHS)",
+        path: ["objective", "quadratic"],
+      });
+    }
+
     let numConstraints: number;
 
     // Handle both dense and sparse formats

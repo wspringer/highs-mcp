@@ -178,10 +178,10 @@ describe("HiGHS MCP Server", () => {
       expect(constraintsSchema.anyOf).toBeDefined();
       expect(constraintsSchema.anyOf).toHaveLength(2);
 
-      // Check that minimum constraints are properly exposed
-      expect(
-        tool.inputSchema.properties.problem.properties.objective.properties.linear.minItems,
-      ).toBe(1);
+      // Check that objective supports both linear and quadratic
+      const objectiveSchema = tool.inputSchema.properties.problem.properties.objective;
+      expect(objectiveSchema.properties.linear).toBeDefined();
+      expect(objectiveSchema.properties.quadratic).toBeDefined();
     });
   });
 

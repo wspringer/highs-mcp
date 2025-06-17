@@ -81,8 +81,11 @@ export function decode(
     const solutionValues: number[] = [];
     const dualValues: number[] = [];
 
+    // Determine number of variables
+    const numVars = problem.variables.length;
+
     // Iterate through variables in the same order as defined in the problem
-    for (let i = 0; i < problem.objective.linear.length; i++) {
+    for (let i = 0; i < numVars; i++) {
       // Use custom name if provided, otherwise default to x1, x2, etc.
       const varName = problem.variables[i].name || `x${i + 1}`;
       const column = result.Columns[varName];

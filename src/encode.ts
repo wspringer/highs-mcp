@@ -119,14 +119,82 @@ function formatObjective(
   const terms: string[] = [];
   let hasTerms = false;
 
-  for (let i = 0; i < objective.linear.length; i++) {
-    const coeff = objective.linear[i];
-    const varName = variables[i].name || `x${i + 1}`;
-    const term = formatCoefficient(coeff, varName, !hasTerms);
-    if (term) {
-      terms.push(term);
-      hasTerms = true;
+  // Add linear terms
+  if (objective.linear) {
+    for (let i = 0; i < objective.linear.length; i++) {
+      const coeff = objective.linear[i];
+      const varName = variables[i].name || `x${i + 1}`;
+      const term = formatCoefficient(coeff, varName, !hasTerms);
+      if (term) {
+        terms.push(term);
+        hasTerms = true;
+      }
     }
+  }
+
+  // Add quadratic terms if present
+  if (objective.quadratic) {
+    const quadTerms: string[] = [];
+
+    if (objective.quadratic.format === "sparse") {
+      // Process sparse format
+      const { rows, cols, values } = objective.quadratic;
+      for (let idx = 0; idx < values.length; idx++) {
+        const i = rows[idx];
+        const j = cols[idx];
+        const value = values[idx];
+
+        if (value !== 0) {
+          const varI = variables[i].name || `x${i + 1}`;
+          const varJ = variables[j].name || `x${j + 1}`;
+
+          if (i === j) {
+            // Diagonal term: value * xi^2
+            quadTerms.push(value === 1 ? `${varI}^2` : `${value} ${varI}^2`);
+          } else {
+            // Off-diagonal term: value * xi * xj
+            // Note: HiGHS expects symmetric matrix, so we only include each term once
+            quadTerms.push(value === 1 ? `${varI} * ${varJ}` : `${value} ${varI} * ${varJ}`);
+          }
+        }
+      }
+    } else {
+      // Process dense format
+      const matrix = objective.quadratic.matrix;
+      for (let i = 0; i < matrix.length; i++) {
+        for (let j = i; j < matrix[i].length; j++) {
+          const value = i === j ? matrix[i][j] : matrix[i][j] + matrix[j][i]; // Sum symmetric entries
+
+          if (value !== 0) {
+            const varI = variables[i].name || `x${i + 1}`;
+            const varJ = variables[j].name || `x${j + 1}`;
+
+            if (i === j) {
+              // Diagonal term: value * xi^2
+              quadTerms.push(value === 1 ? `${varI}^2` : `${value} ${varI}^2`);
+            } else {
+              // Off-diagonal term: value * xi * xj
+              quadTerms.push(value === 1 ? `${varI} * ${varJ}` : `${value} ${varI} * ${varJ}`);
+            }
+          }
+        }
+      }
+    }
+
+    // Add quadratic terms in HiGHS format: [ quadratic_terms ] / 2
+    if (quadTerms.length > 0) {
+      if (hasTerms) {
+        terms.push("+ [ " + quadTerms.join(" + ") + " ] / 2");
+      } else {
+        terms.push("[ " + quadTerms.join(" + ") + " ] / 2");
+        hasTerms = true;
+      }
+    }
+  }
+
+  // If no terms at all, add a zero
+  if (!hasTerms) {
+    terms.push("0");
   }
 
   result += terms.join(" ") + "\n";
