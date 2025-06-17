@@ -152,6 +152,9 @@ describe("HiGHS MCP Server", () => {
       expect(response.result.tools).toHaveLength(1);
       expect(response.result.tools[0].name).toBe("optimize-mip-lp-tool");
       expect(response.result.tools[0].description).toContain("HiGHS solver");
+      expect(response.result.tools[0].description).toContain("quadratic programming (QP)");
+      expect(response.result.tools[0].description).toContain("convex quadratic objectives");
+      expect(response.result.tools[0].description).toContain("continuous variables (no MIQP)");
     });
 
     it("should include comprehensive schema documentation", async () => {

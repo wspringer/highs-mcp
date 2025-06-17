@@ -34,7 +34,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: TOOL_NAME,
       description:
-        "Solve linear programming (LP) or mixed-integer programming (MIP) problems using HiGHS solver",
+        "Solve linear programming (LP), mixed-integer programming (MIP), or quadratic programming (QP) problems using HiGHS solver. " +
+        "QP support includes convex quadratic objectives (minimize c^T x + 0.5 x^T Q x) where Q must be positive semidefinite. " +
+        "Limitations: QP only supports continuous variables (no MIQP), and when specifying Q matrix values should be doubled to account for the 0.5 factor.",
       inputSchema: zodToJsonSchema(OptimizationArgsSchema, {
         $refStrategy: "none",
       }),
