@@ -13,8 +13,7 @@ test("solves simple convex QP problem with HiGHS", async () => {
     sense: "minimize",
     objective: {
       quadratic: {
-        format: "dense",
-        matrix: [[2, 0], [0, 2]]  // Q = 2*I (scaled by 2 because of 0.5 factor)
+        dense: [[2, 0], [0, 2]]  // Q = 2*I (scaled by 2 because of 0.5 factor)
       }
     },
     constraints: {
@@ -52,8 +51,7 @@ test("solves QP with linear and quadratic terms", async () => {
     objective: {
       linear: [-1, -2],
       quadratic: {
-        format: "dense",
-        matrix: [[2, 0], [0, 2]]
+        dense: [[2, 0], [0, 2]]
       }
     },
     constraints: {
@@ -88,11 +86,12 @@ test("solves portfolio optimization with sparse matrix", async () => {
     objective: {
       // Covariance matrix (symmetric, positive definite) - doubled for 0.5 factor
       quadratic: {
-        format: "sparse",
-        rows: [0, 0, 0, 1, 1, 2],
-        cols: [0, 1, 2, 1, 2, 2],
-        values: [0.2, 0.04, 0.02, 0.1, 0.04, 0.16], // Doubled values
-        shape: [3, 3]
+        sparse: {
+          rows: [0, 0, 0, 1, 1, 2],
+          cols: [0, 1, 2, 1, 2, 2],
+          values: [0.2, 0.04, 0.02, 0.1, 0.04, 0.16], // Doubled values
+          shape: [3, 3]
+        }
       }
     },
     constraints: {

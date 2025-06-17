@@ -95,15 +95,15 @@ The server provides a single tool: `optimize-mip-lp-tool`
       linear?: number[],  // Linear coefficients (optional if quadratic is provided)
       quadratic?: {       // Quadratic terms for convex QP (optional)
         // Dense format:
-        format: 'dense',
-        matrix: number[][]  // Symmetric positive semidefinite matrix Q
-      } | {
-        // Sparse format:
-        format: 'sparse',
-        rows: number[],     // Row indices (0-indexed)
-        cols: number[],     // Column indices (0-indexed)
-        values: number[],   // Values of Q matrix
-        shape: [number, number]  // [num_variables, num_variables]
+        dense?: number[][]  // Symmetric positive semidefinite matrix Q
+        
+        // OR Sparse format:
+        sparse?: {
+          rows: number[],     // Row indices (0-indexed)
+          cols: number[],     // Column indices (0-indexed)
+          values: number[],   // Values of Q matrix
+          shape: [number, number]  // [num_variables, num_variables]
+        }
       }
     },
     variables: Array<{
@@ -297,8 +297,7 @@ Minimize portfolio risk (variance) while achieving target return:
     objective: {
       // Quadratic: minimize portfolio variance (risk)
       quadratic: {
-        format: 'dense',
-        matrix: [  // Covariance matrix (×2 for 0.5 factor)
+        dense: [  // Covariance matrix (×2 for 0.5 factor)
           [0.2, 0.04, 0.02],
           [0.04, 0.1, 0.04], 
           [0.02, 0.04, 0.16]

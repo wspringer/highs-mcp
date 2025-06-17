@@ -136,9 +136,9 @@ function formatObjective(
   if (objective.quadratic) {
     const quadTerms: string[] = [];
 
-    if (objective.quadratic.format === "sparse") {
+    if ("sparse" in objective.quadratic) {
       // Process sparse format
-      const { rows, cols, values } = objective.quadratic;
+      const { rows, cols, values } = objective.quadratic.sparse;
       for (let idx = 0; idx < values.length; idx++) {
         const i = rows[idx];
         const j = cols[idx];
@@ -158,9 +158,9 @@ function formatObjective(
           }
         }
       }
-    } else {
+    } else if ("dense" in objective.quadratic) {
       // Process dense format
-      const matrix = objective.quadratic.matrix;
+      const matrix = objective.quadratic.dense;
       for (let i = 0; i < matrix.length; i++) {
         for (let j = i; j < matrix[i].length; j++) {
           const value = i === j ? matrix[i][j] : matrix[i][j] + matrix[j][i]; // Sum symmetric entries

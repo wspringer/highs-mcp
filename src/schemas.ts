@@ -22,9 +22,8 @@ export const CompactVariableSchema = z.object({
   ),
 });
 
-// Quadratic objective schemas
-const QuadraticSparseSchema = z.object({
-  format: z.literal("sparse"),
+// Quadratic matrix schema (reusing SparseMatrixSchema pattern)
+const QuadraticMatrixSchema = z.object({
   rows: z
     .array(z.number().int().nonnegative())
     .describe("Row indices of quadratic matrix (0-indexed)"),
@@ -37,29 +36,38 @@ const QuadraticSparseSchema = z.object({
     .describe("[num_variables, num_variables] dimensions of Q matrix"),
 });
 
-const QuadraticDenseSchema = z.object({
-  format: z.literal("dense"),
-  matrix: z.array(z.array(z.number())).describe("Dense symmetric matrix Q"),
+// Dense quadratic schema
+const DenseQuadraticSchema = z.object({
+  dense: z.array(z.array(z.number())).describe("Dense symmetric matrix Q for quadratic objective"),
 });
 
+// Sparse quadratic schema
+const SparseQuadraticSchema = z.object({
+  sparse: QuadraticMatrixSchema.describe(
+    "Sparse matrix Q in COO (Coordinate) format - only specify non-zero values with their positions",
+  ),
+});
+
+// Union of dense and sparse quadratic formats
 const QuadraticObjectiveSchema = z
-  .union([QuadraticSparseSchema, QuadraticDenseSchema])
+  .union([DenseQuadraticSchema, SparseQuadraticSchema])
   .refine((data) => {
-    if (data.format === "sparse") {
-      return (
-        data.shape[0] === data.shape[1] && // Must be square
-        data.rows.length === data.cols.length && // Array lengths match
-        data.rows.length === data.values.length && // Array lengths match
-        data.rows.every((r) => r < data.shape[0]) && // Row indices in bounds
-        data.cols.every((c) => c < data.shape[1])
-      ); // Col indices in bounds
-    } else {
-      const matrix = data.matrix;
+    if ("dense" in data) {
+      const matrix = data.dense;
       return (
         matrix.length > 0 && // Non-empty
         matrix.length === matrix[0].length && // Square matrix
         matrix.every((row) => row.length === matrix.length)
       ); // All rows same length
+    } else {
+      const sparse = data.sparse;
+      return (
+        sparse.shape[0] === sparse.shape[1] && // Must be square
+        sparse.rows.length === sparse.cols.length && // Array lengths match
+        sparse.rows.length === sparse.values.length && // Array lengths match
+        sparse.rows.every((r) => r < sparse.shape[0]) && // Row indices in bounds
+        sparse.cols.every((c) => c < sparse.shape[1])
+      ); // Col indices in bounds
     }
   }, "Quadratic matrix must be square with valid dimensions");
 
@@ -85,9 +93,7 @@ export const ObjectiveSchema = z
       if (data.linear && data.quadratic) {
         const numVars = data.linear.length;
         const qSize =
-          data.quadratic.format === "sparse"
-            ? data.quadratic.shape[0]
-            : data.quadratic.matrix.length;
+          "dense" in data.quadratic ? data.quadratic.dense.length : data.quadratic.sparse.shape[0];
         return numVars === qSize;
       }
       return true;
@@ -204,9 +210,9 @@ export const ProblemSchema = z
       numVars = data.objective.linear.length;
     } else if (data.objective.quadratic) {
       numVars =
-        data.objective.quadratic.format === "sparse"
-          ? data.objective.quadratic.shape[0]
-          : data.objective.quadratic.matrix.length;
+        "dense" in data.objective.quadratic
+          ? data.objective.quadratic.dense.length
+          : data.objective.quadratic.sparse.shape[0];
     } else {
       // This should be caught by ObjectiveSchema refinement, but just in case
       ctx.addIssue({

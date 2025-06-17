@@ -10,8 +10,7 @@ test("schema validates quadratic objective with dense format", () => {
       objective: {
         linear: [1, 2],
         quadratic: {
-          format: "dense",
-          matrix: [[2, 1], [1, 4]]
+          dense: [[2, 1], [1, 4]]
         }
       },
       constraints: {
@@ -37,11 +36,12 @@ test("schema validates quadratic objective with sparse format", () => {
       objective: {
         linear: [1, 2, 3],
         quadratic: {
-          format: "sparse",
-          rows: [0, 0, 1, 2],
-          cols: [0, 1, 1, 2],
-          values: [2.0, 1.0, 4.0, 8.0],
-          shape: [3, 3]
+          sparse: {
+            rows: [0, 0, 1, 2],
+            cols: [0, 1, 1, 2],
+            values: [2.0, 1.0, 4.0, 8.0],
+            shape: [3, 3]
+          }
         }
       },
       constraints: {
@@ -68,8 +68,7 @@ test("schema rejects quadratic objective with integer variables", () => {
       objective: {
         linear: [1, 2],
         quadratic: {
-          format: "dense",
-          matrix: [[2, 1], [1, 4]]
+          dense: [[2, 1], [1, 4]]
         }
       },
       constraints: {
@@ -95,8 +94,7 @@ test("schema allows quadratic-only objective", () => {
       sense: "minimize",
       objective: {
         quadratic: {
-          format: "dense",
-          matrix: [[2, 1], [1, 4]]
+          dense: [[2, 1], [1, 4]]
         }
       },
       constraints: {
@@ -121,8 +119,7 @@ test("encode generates correct LP format for dense quadratic", () => {
     objective: {
       linear: [1, 2],
       quadratic: {
-        format: "dense",
-        matrix: [[2, 1], [1, 4]]
+        dense: [[2, 1], [1, 4]]
       }
     },
     constraints: {
@@ -149,11 +146,12 @@ test("encode generates correct LP format for sparse quadratic", () => {
     objective: {
       linear: [0, 0, 0],
       quadratic: {
-        format: "sparse",
-        rows: [0, 1, 1, 2],
-        cols: [0, 0, 1, 2],
-        values: [2.0, 1.0, 4.0, 8.0],
-        shape: [3, 3]
+        sparse: {
+          rows: [0, 1, 1, 2],
+          cols: [0, 0, 1, 2],
+          values: [2.0, 1.0, 4.0, 8.0],
+          shape: [3, 3]
+        }
       }
     },
     constraints: {
@@ -179,8 +177,7 @@ test("encode handles quadratic-only objective", () => {
     sense: "minimize",
     objective: {
       quadratic: {
-        format: "dense",
-        matrix: [[1, 0], [0, 1]]
+        dense: [[1, 0], [0, 1]]
       }
     },
     constraints: {
@@ -206,8 +203,7 @@ test("encode handles mixed positive and negative quadratic coefficients", () => 
     objective: {
       linear: [-1, -2],
       quadratic: {
-        format: "dense",
-        matrix: [[-2, 1], [1, -4]]
+        dense: [[-2, 1], [1, -4]]
       }
     },
     constraints: {
